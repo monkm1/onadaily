@@ -1,4 +1,5 @@
 import sys
+from logging import exception
 from os import path
 
 import yaml
@@ -11,41 +12,55 @@ from selenium.webdriver.support import expected_conditions as EC  # noqa
 from selenium.webdriver.support.ui import WebDriverWait
 from webdriver_manager.chrome import ChromeDriverManager
 
+# consts
+SETTING_FILE_NAME = "onadaily.yaml"
+ONAMI = 0
+SHOWDANG = 1
+BANANA = 2
+SITES = [ONAMI, SHOWDANG, BANANA]
+SITE_NAMES = ["onami", "showdang", "banana"]
+URLS = [
+    "https://oname.kr/attend/stamp.html",
+    "https://showdang.kr/intro/adult_im.html?returnUrl=%2Fattend%2Fstamp.html",
+    "https://www.bananamall.co.kr/login/login.php?url=https://www.bananamall.co.kr/etc/attendance.php",
+]
+STAMP_URLS = [
+    "https://oname.kr/attend/stamp.html",
+    "https://showdang.kr/attend/stamp.html",
+    "https://www.bananamall.co.kr/etc/attendance.php?islog=Y",
+]
+INPUT_ID = ['//*[@id="member_id"]', r'//*[@id="member_id"]', r'//*[@id="input_id"]']
+INPUT_PWD = [
+    '//*[@id="member_passwd"]',
+    r'//*[@id="member_passwd"]',
+    "/html/body/div/div[2]/div[1]/form/label[2]/input",
+]
+BTN_LOGIN = [
+    "/html/body/div[3]/div[2]/div/div/form/div/div[1]/fieldset/a",
+    "/html/body/div[1]/form/div/fieldset/a",
+    "/html/body/div/div[2]/div[1]/form/a",
+]
+BTN_GOOGLE_LOGIN = [
+    "/html/body/div[4]/div/form/div/div/fieldset/ul[2]/li[3]/a",
+    "/html/body/div[1]/form/div/ul/li[4]/a",
+    "/html/body/div/div[2]/div[1]/form/div[2]/a[4]",
+]
+BTN_KAKAO_LOGIN = [
+    "/html/body/div[3]/div[2]/div/div/form/div/div[2]/ul/li[4]/a",
+    "/html/body/div[1]/form/div/ul/li[3]/a",
+    "/html/body/div/div[2]/div[1]/form/div[2]/a[2]",
+]
+BTN_CHECK = [
+    "/html/body/div[4]/div/div[3]/form/div/div[1]/span/a",
+    "/html/body/div[6]/div/div/div[3]/div/ul[2]/form/div/div[1]/span/a",
+    "/html/body/div[8]/div[2]/div[6]/div[2]/div[1]/div/a",
+]
+
+
 if __name__ == "__main__":
 
-    # consts
-    SETTING_FILE_NAME = "onadaily.yaml"
-    ONAMI = 0
-    SHOWDANG = 1
-    SITES = [ONAMI, SHOWDANG]
-    SITE_NAMES = ["onami", "showdang"]
-    URLS = [
-        "https://oname.kr/attend/stamp.html",
-        "https://showdang.kr/intro/adult_im.html?returnUrl=%2Fattend%2Fstamp.html",
-    ]
-    STAMP_URLS = ["https://oname.kr/attend/stamp.html", "https://showdang.kr/attend/stamp.html"]
-    INPUT_ID = ['//*[@id="member_id"]', r'//*[@id="member_id"]']
-    INPUT_PWD = ['//*[@id="member_passwd"]', r'//*[@id="member_passwd"]']
-    BTN_LOGIN = ["/html/body/div[3]/div[2]/div/div/form/div/div[1]/fieldset/a", "/html/body/div[1]/form/div/fieldset/a"]
-    BTN_GOOGLE_LOGIN = [
-        "/html/body/div[4]/div/form/div/div/fieldset/ul[2]/li[3]/a",
-        "/html/body/div[1]/form/div/ul/li[4]/a",
-    ]
-    BTN_KAKAO_LOGIN = [
-        "/html/body/div[3]/div[2]/div/div/form/div/div[2]/ul/li[4]/a",
-        "/html/body/div[1]/form/div/ul/li[3]/a",
-    ]
-    BTN_CHECK = [
-        "/html/body/div[4]/div/div[3]/form/div/div[1]/span/a",
-        "/html/body/div[6]/div/div/div[3]/div/ul[2]/form/div/div[1]/span/a",
-    ]
-
-    if len(sys.argv) > 1 and sys.argv[1] == "test":
-        SETTING_FILE_NAME = "test.yaml"
-
-    settings = {}
-    with open(SETTING_FILE_NAME) as f:
-        settings = dict(yaml.safe_load(f))
+    class YamlError(Exception):
+        pass
 
     def getoption(site, option):
         section = "common"
@@ -58,26 +73,21 @@ if __name__ == "__main__":
         for site in SITES:
             if getoption(site, "enable") is True:
                 checklist.append(getoption(site, "login") != "default")
-        return all(checklist)
+        return any(checklist)
 
-    options = Options()
-    user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/103.0.0.0 Safari/537.36"  # noqa
-    options.add_argument("user-agent=" + user_agent)
-    options.add_argument("--disable-extensions")
-    options.add_argument("--log-level=3")
-    # options.add_argument("--window-size=300,300")
+    def check_yaml_vaild():
+        if datadir_required():
+            if getoption("common", "datadir") is None or getoption("common", "profile") is None:
+                print("구글/카카오 로그인을 사용하려면 설정 파일의 datadir, profile을 지정해 주세요.")
+                raise YamlError()
 
-    if datadir_required():
-        datadir = getoption("common", "datadir")
-        datadir = path.expandvars(datadir)
-        options.add_argument(f"--user-data-dir={datadir}")
-        options.add_argument(f"--profile-directory={getoption('common', 'profile')}")
+        for site in SITES:
+            if getoption(site, "enable") is True and getoption(site, "login") == "default":
+                if getoption(site, "id") is None or getoption(site, "password") is None:
+                    print(f"설정 파일의 {SITE_NAMES[site]} 아이디와 패스워드를 지정해 주세요.")
+                    raise YamlError()
 
-    service = ChromeService(ChromeDriverManager().install())
-    driver = webdriver.Chrome(service=service, options=options)
-    wait = WebDriverWait(driver, 3)
-
-    def check(site):
+    def check(driver, site):
         print(f"== {SITE_NAMES[site]} ==")
 
         if getoption(site, "enable") is False:
@@ -111,7 +121,7 @@ if __name__ == "__main__":
             checkbtn = wait.until(EC.presence_of_element_located((By.XPATH, BTN_CHECK[site])))
             checkbtn.click()
             print("출석 체크 성공")
-            if site == ONAMI:
+            if site == ONAMI or site == SHOWDANG or site == BANANA:
                 wait.until(EC.alert_is_present())
                 alert = driver.switch_to.alert
                 alert.accept()
@@ -119,10 +129,44 @@ if __name__ == "__main__":
             print("출석체크 버튼을 찾을 수 없습니다. 이미 체크 했거나 오류입니다.")
         print()
 
-    for site in SITES:
-        check(site)
-    print("출석 체크 완료")
-    driver.quit()
+    try:
+        if len(sys.argv) > 1 and sys.argv[1] == "test":
+            SETTING_FILE_NAME = "test.yaml"
 
-    if getoption("common", "entertoquit"):
-        input("종료하려면 Enter를 누르세요...")
+        settings = {}
+        with open(SETTING_FILE_NAME) as f:
+            settings = dict(yaml.safe_load(f))
+
+        check_yaml_vaild()
+
+        options = Options()
+        user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/103.0.0.0 Safari/537.36"  # noqa
+        options.add_argument("user-agent=" + user_agent)
+        options.add_argument("--disable-extensions")
+        options.add_argument("--log-level=3")
+        # options.add_argument("--window-size=300,300")
+        if datadir_required():
+            datadir = getoption("common", "datadir")
+            datadir = path.expandvars(datadir)
+            options.add_argument(f"--user-data-dir={datadir}")
+            options.add_argument(f"--profile-directory={getoption('common', 'profile')}")
+
+        service = ChromeService(ChromeDriverManager().install())
+        driver = webdriver.Chrome(service=service, options=options)
+        wait = WebDriverWait(driver, 3)
+
+        for site in SITES:
+            check(driver, site)
+        print("출석 체크 완료")
+
+        if getoption("common", "entertoquit"):
+            input("종료하려면 Enter를 누르세요...")
+    except YamlError:
+        pass
+    finally:
+        try:
+            driver.quit()
+        except NameError:
+            pass
+        except:  # noqa
+            raise
