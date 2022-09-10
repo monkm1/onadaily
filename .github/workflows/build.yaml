@@ -21,7 +21,8 @@ jobs:
       - name: Archiving dist
         run: |
           (cd dist/windows/onadaily && zip -r onadaily-windows.zip *)
-          cp dist/windows/onadaily/onadaily-windows.zip ~
+          cp dist/windows/onadaily/onadaily-windows.zip .
+          ls -al
       - name: Release
         uses: softprops/action-gh-release@v1
         with:
