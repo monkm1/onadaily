@@ -40,7 +40,7 @@ if __name__ == "__main__":
         "/html/body/div[6]/div/div/div[3]/div/ul[2]/form/div/div[1]/span/a",
     ]
 
-    if sys.argv[1] == "test":
+    if len(sys.argv) > 1 and sys.argv[1] == "test":
         SETTING_FILE_NAME = "test.yaml"
 
     settings = {}
