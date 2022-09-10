@@ -17,11 +17,10 @@ jobs:
           path: .
       - name: copy config file
         run: |
-          cp onadaily.yaml dist/windows/
+          cp onadaily.yaml dist/windows/onadaily/
       - name: Archiving dist
-        uses: montudor/action-zip@v1
-        with:
-          args: zip -qq -r onadaily-windows.zip dist/windows/
+        run: |
+          zip -r onadaily-windows.zip ./dist/windows/onadaily/*
       - name: Release
         uses: softprops/action-gh-release@v1
         with:
