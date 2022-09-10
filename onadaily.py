@@ -1,6 +1,6 @@
 import sys
-from logging import exception
-from os import path
+from os import path, remove
+from urllib.parse import urlsplit, urlunsplit
 
 import yaml
 from selenium import webdriver
@@ -27,7 +27,7 @@ URLS = [
 STAMP_URLS = [
     "https://oname.kr/attend/stamp.html",
     "https://showdang.kr/attend/stamp.html",
-    "https://www.bananamall.co.kr/etc/attendance.php?islog=Y",
+    "https://www.bananamall.co.kr/etc/attendance.php",
 ]
 INPUT_ID = ['//*[@id="member_id"]', r'//*[@id="member_id"]', r'//*[@id="input_id"]']
 INPUT_PWD = [
@@ -87,6 +87,9 @@ if __name__ == "__main__":
                     print(f"설정 파일의 {SITE_NAMES[site]} 아이디와 패스워드를 지정해 주세요.")
                     raise YamlError()
 
+    def remove_query(url):
+        return urlunsplit(urlsplit(url)._replace(query="", fragment=""))
+
     def check(driver, site):
         print(f"== {SITE_NAMES[site]} ==")
 
@@ -101,30 +104,38 @@ if __name__ == "__main__":
             alert.accept()
         loginxpath = ""
 
-        if getoption(site, "login") == "default":
-            idform = driver.find_element(By.XPATH, INPUT_ID[site])
-            pwdform = driver.find_element(By.XPATH, INPUT_PWD[site])
-            idform.send_keys(getoption(site, "id"))
-            pwdform.send_keys(getoption(site, "password"))
+        try:
+            if getoption(site, "login") == "default":
+                idform = wait.until(EC.presence_of_element_located((By.XPATH, INPUT_ID[site])))
+                pwdform = driver.find_element(By.XPATH, INPUT_PWD[site])
+                idform.send_keys(getoption(site, "id"))
+                pwdform.send_keys(getoption(site, "password"))
 
-            loginxpath = BTN_LOGIN[site]
-        elif getoption(site, "login") == "kakao":
-            loginxpath = BTN_KAKAO_LOGIN[site]
-        elif getoption(site, "login") == "google":
-            loginxpath = BTN_GOOGLE_LOGIN[site]
+                loginxpath = BTN_LOGIN[site]
+            elif getoption(site, "login") == "kakao":
+                loginxpath = BTN_KAKAO_LOGIN[site]
+            elif getoption(site, "login") == "google":
+                loginxpath = BTN_GOOGLE_LOGIN[site]
 
-        loginbtn = wait.until(EC.presence_of_element_located((By.XPATH, loginxpath)))
-        loginbtn.click()
-        WebDriverWait(driver, 10).until(lambda driver: driver.current_url == STAMP_URLS[site])
+            loginbtn = wait.until(EC.presence_of_element_located((By.XPATH, loginxpath)))
+            loginbtn.click()
+        except TimeoutException:
+            if driver.current_url != STAMP_URLS[site]:
+                raise
+
+        WebDriverWait(driver, 10).until(lambda driver: remove_query(driver.current_url) == STAMP_URLS[site])
         print("로그인 성공")
         try:
             checkbtn = wait.until(EC.presence_of_element_located((By.XPATH, BTN_CHECK[site])))
             checkbtn.click()
-            print("출석 체크 성공")
             if site == ONAMI or site == SHOWDANG or site == BANANA:
                 wait.until(EC.alert_is_present())
                 alert = driver.switch_to.alert
+                if site == BANANA and alert.text == "잠시후 다시 시도해 주세요." or alert.text == "이미 출석체크를 하셨습니다.":
+                    alert.accept()
+                    raise TimeoutException()
                 alert.accept()
+            print("출석 체크 성공")
         except TimeoutException:
             print("출석체크 버튼을 찾을 수 없습니다. 이미 체크 했거나 오류입니다.")
         print()
@@ -158,9 +169,6 @@ if __name__ == "__main__":
         for site in SITES:
             check(driver, site)
         print("출석 체크 완료")
-
-        if getoption("common", "entertoquit"):
-            input("종료하려면 Enter를 누르세요...")
     except YamlError:
         pass
     finally:
@@ -170,3 +178,6 @@ if __name__ == "__main__":
             pass
         except:  # noqa
             raise
+
+        if getoption("common", "entertoquit"):
+            input("종료하려면 Enter를 누르세요...")
