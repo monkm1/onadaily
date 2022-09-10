@@ -75,7 +75,7 @@ if __name__ == "__main__":
                 checklist.append(getoption(site, "login") != "default")
         return any(checklist)
 
-    def check_yaml_vaild():
+    def check_yaml_valid():
         if datadir_required():
             if getoption("common", "datadir") is None or getoption("common", "profile") is None:
                 print("구글/카카오 로그인을 사용하려면 설정 파일의 datadir, profile을 지정해 주세요.")
@@ -148,7 +148,7 @@ if __name__ == "__main__":
         with open(SETTING_FILE_NAME) as f:
             settings = dict(yaml.safe_load(f))
 
-        check_yaml_vaild()
+        check_yaml_valid()
 
         options = Options()
         user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/103.0.0.0 Safari/537.36"  # noqa
