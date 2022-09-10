@@ -3,14 +3,22 @@ common:
   profile: null # use "default" for google or kakao login in default chrome profile
   entertoquit: true
 
+# Write id and password if login is 'default'
+
 onami:
-  enable: true
+  enable: false
   login: default
   id: null
   password: null
 
 showdang:
-  enable: true
+  enable: false
+  login: default
+  id: null
+  password: null
+
+banana:
+  enable: false
   login: default
   id: null
   password: null
