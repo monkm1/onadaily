@@ -20,7 +20,7 @@ jobs:
           cp onadaily.yaml dist/windows/onadaily/
       - name: Archiving dist
         run: |
-          zip -r onadaily-windows.zip ./dist/windows/onadaily/*
+          (cd dist/windows/onadaily && zip -r onadaily-windows.zip *) > onadaily-windows.zip
       - name: Release
         uses: softprops/action-gh-release@v1
         with:
