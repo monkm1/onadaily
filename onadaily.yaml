@@ -1,13 +1,13 @@
 common:
-  datadir: null # use "%localappdata%\\Google\\Chrome\\User Data" for google or kakao login
-  profile: null # use "default" for google or kakao login in default chrome profile
-  entertoquit: true
+  datadir: null # Use "%localappdata%\\Google\\Chrome\\User Data" for google or kakao login.
+  profile: null # Use "default" for google or kakao login in default chrome profile.
+  entertoquit: true # if false, you cannot see the error message.
 
-# Write id and password if login is 'default'
+# Write id and password if login is 'default'.
 
 onami:
   enable: false
-  login: default
+  login: default # default, google, kakao
   id: null
   password: null
 
