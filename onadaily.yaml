@@ -1,0 +1,16 @@
+common:
+  datadir: null # use "%localappdata%\\Google\\Chrome\\User Data" for google or kakao login
+  profile: null # use "default" for google or kakao login in default chrome profile
+  entertoquit: true
+
+onami:
+  enable: true
+  login: default
+  id: null
+  password: null
+
+showdang:
+  enable: true
+  login: default
+  id: null
+  password: null

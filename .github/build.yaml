@@ -1,0 +1,28 @@
+name: build and release
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+jobs:
+  build:
+    runs-on: ubuntu-lastest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: build
+        uses: JackMcKew/pyinstaller-action-windows@main
+        with:
+          path: .
+      - name: copy config file
+        run: |
+          cp onadaily.yaml dist/windows/
+      - name: Archiving dist
+        uses: montudor/action-zip@v1
+        with:
+          args: zip -qq -r onadaily-windows.zip dist/windows/
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: onadaily-windows.zip
