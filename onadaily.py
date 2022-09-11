@@ -1,5 +1,6 @@
 import sys
-from os import path, remove
+import traceback
+from os import path
 from urllib.parse import urlsplit, urlunsplit
 
 import yaml
@@ -20,37 +21,47 @@ BANANA = 2
 SITES = [ONAMI, SHOWDANG, BANANA]
 SITE_NAMES = ["onami", "showdang", "banana"]
 URLS = [
-    "https://oname.kr/attend/stamp.html",
-    "https://showdang.kr/intro/adult_im.html?returnUrl=%2Fattend%2Fstamp.html",
-    "https://www.bananamall.co.kr/login/login.php?url=https://www.bananamall.co.kr/etc/attendance.php",
+    "https://oname.kr/index.html",
+    "https://showdang.kr/",
+    "https://www.bananamall.co.kr/",
 ]
 STAMP_URLS = [
     "https://oname.kr/attend/stamp.html",
     "https://showdang.kr/attend/stamp.html",
     "https://www.bananamall.co.kr/etc/attendance.php",
 ]
-INPUT_ID = ['//*[@id="member_id"]', r'//*[@id="member_id"]', r'//*[@id="input_id"]']
+INPUT_ID = ['//*[@id="member_id"]', r'//*[@id="member_id"]', r"//*[@id='id']"]
 INPUT_PWD = [
     '//*[@id="member_passwd"]',
     r'//*[@id="member_passwd"]',
-    "/html/body/div/div[2]/div[1]/form/label[2]/input",
+    "//*[@id='passwd']",
+]
+BTN_MAIN_LOGIN = [
+    "/html/body/div[3]/div[1]/ul/li[1]/a",
+    "/html/body/div[5]/div[1]/div/div/a[4]",
+    "/html/body/div[8]/div[1]/div[2]/div/div[2]/ul/li[1]/a",
+]
+CHK_LOGIN = [
+    "/html/body/div[3]/div[1]/div/b[1]/span[string-length(text()) > 0]",
+    "/html/body/div[5]/div[1]/div/div/span[2]/strong/span[string-length(text()) > 0]",
+    "/html/body/div[8]/div[1]/div[2]/div/div[2]/ul/li[2]/a[@title='로그아웃']",
 ]
 BTN_LOGIN = [
     "/html/body/div[3]/div[2]/div/div/form/div/div[1]/fieldset/a",
     "/html/body/div[1]/form/div/fieldset/a",
-    "/html/body/div/div[2]/div[1]/form/a",
+    "/html/body/div[2]/div/div[5]/form/input[2]",
 ]
 BTN_GOOGLE_LOGIN = [
     "/html/body/div[4]/div/form/div/div/fieldset/ul[2]/li[3]/a",
-    "/html/body/div[1]/form/div/ul/li[4]/a",
-    "/html/body/div/div[2]/div[1]/form/div[2]/a[4]",
+    "/html/body/div[6]/div/div/form/div/div/fieldset/ul[1]/li[3]/a",
+    "/html/body/div[2]/div/div[5]/div[2]/a[4]/img",
 ]
 BTN_KAKAO_LOGIN = [
-    "/html/body/div[3]/div[2]/div/div/form/div/div[2]/ul/li[4]/a",
-    "/html/body/div[1]/form/div/ul/li[3]/a",
-    "/html/body/div/div[2]/div[1]/form/div[2]/a[2]",
+    "/html/body/div[4]/div/form/div/div/fieldset/ul[2]/li[4]/a",
+    "/html/body/div[6]/div/div/form/div/div/fieldset/ul[1]/li[4]/a",
+    "/html/body/div[2]/div/div[5]/div[2]/a[2]/img",
 ]
-BTN_CHECK = [
+BTN_STAMP = [
     "/html/body/div[4]/div/div[3]/form/div/div[1]/span/a",
     "/html/body/div[6]/div/div/div[3]/div/ul[2]/form/div/div[1]/span/a",
     "/html/body/div[8]/div[2]/div[6]/div[2]/div[1]/div/a",
@@ -90,6 +101,17 @@ if __name__ == "__main__":
     def remove_query(url):
         return urlunsplit(urlsplit(url)._replace(query="", fragment=""))
 
+    def waitlogin(driver, site):
+        chkxpath = CHK_LOGIN[site]
+        wait.until(EC.presence_of_element_located((By.XPATH, chkxpath)))
+
+    def chklogin(driver, site):
+        chkxpath = CHK_LOGIN[site]
+        ele = driver.find_elements(By.XPATH, chkxpath)
+        if ele:
+            return True
+        return False
+
     def check(driver, site):
         print(f"== {SITE_NAMES[site]} ==")
 
@@ -98,35 +120,38 @@ if __name__ == "__main__":
             return None
 
         driver.get(URLS[site])
-        if site == ONAMI:
-            WebDriverWait(driver, 3).until(EC.alert_is_present())
-            alert = driver.switch_to.alert
-            alert.accept()
-        loginxpath = ""
 
-        try:
-            if getoption(site, "login") == "default":
-                idform = wait.until(EC.presence_of_element_located((By.XPATH, INPUT_ID[site])))
-                pwdform = driver.find_element(By.XPATH, INPUT_PWD[site])
-                idform.send_keys(getoption(site, "id"))
-                pwdform.send_keys(getoption(site, "password"))
+        if not chklogin(driver, site):
+            if site != BANANA:
+                mainlogin = wait.until(EC.presence_of_element_located((By.XPATH, BTN_MAIN_LOGIN[site])))
+                mainlogin.click()
+            loginxpath = ""
 
-                loginxpath = BTN_LOGIN[site]
-            elif getoption(site, "login") == "kakao":
-                loginxpath = BTN_KAKAO_LOGIN[site]
-            elif getoption(site, "login") == "google":
-                loginxpath = BTN_GOOGLE_LOGIN[site]
+            try:
+                if getoption(site, "login") == "default":
+                    idform = wait.until(EC.presence_of_element_located((By.XPATH, INPUT_ID[site])))
+                    pwdform = driver.find_element(By.XPATH, INPUT_PWD[site])
+                    idform.send_keys(getoption(site, "id"))
+                    pwdform.send_keys(getoption(site, "password"))
 
-            loginbtn = wait.until(EC.presence_of_element_located((By.XPATH, loginxpath)))
-            loginbtn.click()
-        except TimeoutException:
-            if driver.current_url != STAMP_URLS[site]:
-                raise
+                    loginxpath = BTN_LOGIN[site]
+                elif getoption(site, "login") == "kakao":
+                    loginxpath = BTN_KAKAO_LOGIN[site]
+                elif getoption(site, "login") == "google":
+                    loginxpath = BTN_GOOGLE_LOGIN[site]
 
-        WebDriverWait(driver, 10).until(lambda driver: remove_query(driver.current_url) == STAMP_URLS[site])
+                loginbtn = wait.until(EC.presence_of_element_located((By.XPATH, loginxpath)))
+                loginbtn.click()
+            except TimeoutException:
+                if driver.current_url != STAMP_URLS[site]:
+                    raise
+
+            waitlogin(driver, site)
+
         print("로그인 성공")
+        driver.get(STAMP_URLS[site])
         try:
-            checkbtn = wait.until(EC.presence_of_element_located((By.XPATH, BTN_CHECK[site])))
+            checkbtn = wait.until(EC.presence_of_element_located((By.XPATH, BTN_STAMP[site])))
             checkbtn.click()
             if site == ONAMI or site == SHOWDANG or site == BANANA:
                 wait.until(EC.alert_is_present())
@@ -156,6 +181,8 @@ if __name__ == "__main__":
         options.add_argument("--disable-extensions")
         options.add_argument("--log-level=3")
         # options.add_argument("--window-size=300,300")
+        if getoption("common", "headless"):
+            options.add_argument("--headless")
         if datadir_required():
             datadir = getoption("common", "datadir")
             datadir = path.expandvars(datadir)
@@ -168,9 +195,11 @@ if __name__ == "__main__":
 
         for site in SITES:
             check(driver, site)
-        print("출석 체크 완료")
+        print("\n출석 체크 완료")
     except YamlError:
         pass
+    except Exception:
+        print(traceback.format_exc())
     finally:
         try:
             driver.quit()
