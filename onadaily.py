@@ -112,27 +112,19 @@ if __name__ == "__main__":
             return True
         return False
 
-    def check(driver, site):
-        print(f"== {SITE_NAMES[site]} ==")
-
-        if getoption(site, "enable") is False:
-            print("skip")
-            return None
-
-        driver.get(URLS[site])
-
+    def login(driver, site):
         if not chklogin(driver, site):
             if site != BANANA:
                 mainlogin = wait.until(EC.presence_of_element_located((By.XPATH, BTN_MAIN_LOGIN[site])))
                 mainlogin.click()
-            loginxpath = ""
 
             try:
+                loginxpath = ""
                 if getoption(site, "login") == "default":
                     idform = wait.until(EC.presence_of_element_located((By.XPATH, INPUT_ID[site])))
                     pwdform = driver.find_element(By.XPATH, INPUT_PWD[site])
                     idform.send_keys(getoption(site, "id"))
-                    pwdform.send_keys(getoption(site, "password"))
+                    pwdform.send_keys(getoption(site, "password"))  # write id and password
 
                     loginxpath = BTN_LOGIN[site]
                 elif getoption(site, "login") == "kakao":
@@ -148,29 +140,52 @@ if __name__ == "__main__":
 
             waitlogin(driver, site)
 
-        print("로그인 성공")
-        driver.get(STAMP_URLS[site])
+    def stamp(driver, site):
         try:
             checkbtn = wait.until(EC.presence_of_element_located((By.XPATH, BTN_STAMP[site])))
             checkbtn.click()
+
             if site == ONAMI or site == SHOWDANG or site == BANANA:
                 wait.until(EC.alert_is_present())
                 alert = driver.switch_to.alert
+
                 if site == BANANA and alert.text == "잠시후 다시 시도해 주세요." or alert.text == "이미 출석체크를 하셨습니다.":
                     alert.accept()
                     raise TimeoutException()
+
                 alert.accept()
-            print("출석 체크 성공")
+            return True
         except TimeoutException:
+            return False
+
+    def check(driver, site):
+        print(f"== {SITE_NAMES[site]} ==")
+
+        if getoption(site, "enable") is False:
+            print("skip")
+            return None
+
+        driver.get(URLS[site])
+        login(driver, site)
+        print("로그인 성공")
+
+        driver.get(STAMP_URLS[site])
+        if stamp(driver, site):
+            print("출석 체크 성공")
+        else:
             print("출석체크 버튼을 찾을 수 없습니다. 이미 체크 했거나 오류입니다.")
         print()
 
+    # #########
+    # main
+    # #########
+
     try:
-        if len(sys.argv) > 1 and sys.argv[1] == "test":
+        if len(sys.argv) > 1 and sys.argv[1] == "test":  # test mode
             SETTING_FILE_NAME = "test.yaml"
 
         settings = {}
-        with open(SETTING_FILE_NAME) as f:
+        with open(SETTING_FILE_NAME) as f:  # load yaml
             settings = dict(yaml.safe_load(f))
 
         check_yaml_valid()
@@ -181,8 +196,6 @@ if __name__ == "__main__":
         options.add_argument("--disable-extensions")
         options.add_argument("--log-level=3")
         # options.add_argument("--window-size=300,300")
-        if getoption("common", "headless"):
-            options.add_argument("--headless")
         if datadir_required():
             datadir = getoption("common", "datadir")
             datadir = path.expandvars(datadir)
@@ -195,7 +208,8 @@ if __name__ == "__main__":
 
         for site in SITES:
             check(driver, site)
-        print("\n출석 체크 완료")
+        print("\n모든 출석 체크 완료")
+
     except YamlError:
         pass
     except Exception:
@@ -205,8 +219,8 @@ if __name__ == "__main__":
             driver.quit()
         except NameError:
             pass
-        except:  # noqa
-            raise
+        except Exception:
+            print(traceback.format_exc())
 
         if getoption("common", "entertoquit"):
             input("종료하려면 Enter를 누르세요...")
