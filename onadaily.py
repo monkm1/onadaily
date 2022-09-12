@@ -62,8 +62,8 @@ BTN_KAKAO_LOGIN = [
     "/html/body/div[2]/div/div[5]/div[2]/a[2]/img",
 ]
 BTN_STAMP = [
-    "/html/body/div[4]/div/div[3]/form/div/div[1]/span/a",
-    "/html/body/div[6]/div/div/div[3]/div/ul[2]/form/div/div[1]/span/a",
+    "//a[contains(@onclick, 'attend_send')]",
+    "//a[contains(@onclick, 'attend_send')]",
     "/html/body/div[8]/div[2]/div[6]/div[2]/div[1]/div/a",
 ]
 
