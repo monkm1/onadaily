@@ -47,8 +47,8 @@ CHK_LOGIN = [
     "/html/body/div[8]/div[1]/div[2]/div/div[2]/ul/li[2]/a[@title='로그아웃']",
 ]
 BTN_LOGIN = [
-    "/html/body/div[3]/div[2]/div/div/form/div/div[1]/fieldset/a",
-    "/html/body/div[1]/form/div/fieldset/a",
+    "/html/body/div[4]/div/form/div/div/fieldset/a",
+    "/html/body/div[6]/div/div/form/div/div/fieldset/a",
     "/html/body/div[2]/div/div[5]/form/input[2]",
 ]
 BTN_GOOGLE_LOGIN = [
