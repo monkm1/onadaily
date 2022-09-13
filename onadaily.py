@@ -52,8 +52,8 @@ CHK_LOGIN = [
     "/html/body/div[8]/div[1]/div[2]/div/div[2]/ul/li[2]/a[@title='로그아웃']",
 ]
 BTN_LOGIN = [
-    "//a[contains(@onclick, 'login') and @class='gobtn']",
-    "//a[contains(@onclick, 'login') and @class='login-btn']",
+    "//a[contains(@onclick, 'login')]",
+    "//a[contains(@onclick, 'login')]",
     "//input[contains(@onclick, 'loginch')]",
 ]
 BTN_GOOGLE_LOGIN = [
