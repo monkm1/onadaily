@@ -110,16 +110,33 @@ if __name__ == "__main__":
         chkxpath = CHK_LOGIN[site]
         wait.until(EC.presence_of_element_located((By.XPATH, chkxpath)))
 
-    def chklogin(driver, site):
+    def chklogined(driver, site):
         chkxpath = CHK_LOGIN[site]
         ele = driver.find_elements(By.XPATH, chkxpath)
         if ele:
             return True
         return False
 
+    def chkloginurl(driver, site):
+        if site != BANANA:
+            if remove_query(driver.current_url) != LOGIN_URLS[site]:
+                return False
+            return True
+        else:
+            if driver.find_elements(By.XPATH, "//div[text() = '회원 로그인']"):
+                return True
+            return False
+
+    def printsiteconfig(driver, site):
+        print(f"site : {site}/{SITE_NAMES[site]}")
+        print(f"enable : {getoption(site, 'enable')}")
+        print(f"login : {getoption(site, 'login')}")
+        print(f"datadir required : {datadir_required()}")
+        print(f"current url : {driver.current_url}")
+
     def login(driver, site):
-        if not chklogin(driver, site):
-            if site != BANANA and remove_query(driver.current_url) != LOGIN_URLS[site]:
+        if not chklogined(driver, site):
+            if not chkloginurl(driver, site):
                 mainlogin = wait.until(EC.presence_of_element_located((By.XPATH, BTN_MAIN_LOGIN[site])))
                 mainlogin.click()
 
@@ -220,6 +237,7 @@ if __name__ == "__main__":
         pass
     except Exception:
         print(traceback.format_exc())
+        printsiteconfig(driver, site)
     finally:
         try:
             driver.quit()
