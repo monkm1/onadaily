@@ -67,7 +67,7 @@ BTN_KAKAO_LOGIN = [
     "//a[contains(@href, 'kakao_login')]/img",
 ]
 BTN_STAMP = [
-    "//a[contains(@onclick, 'attend_send')]",
+    "//a[contains(@onclick, 'attend_send')]/img",
     "//a[contains(@onclick, 'attend_send')]",
     "/html/body/div[8]/div[2]/div[6]/div[2]/div[1]/div/a",
 ]
