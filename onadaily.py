@@ -1,6 +1,6 @@
 import sys
 import traceback
-from os import path, remove
+from os import path
 from urllib.parse import urlsplit, urlunsplit
 
 import yaml
@@ -30,7 +30,11 @@ STAMP_URLS = [
     "https://showdang.kr/attend/stamp.html",
     "https://www.bananamall.co.kr/etc/attendance.php",
 ]
-LOGIN_URLS = ["https://oname.kr/intro/adult_im.html", "https://showdang.kr/intro/adult_im.html", ""]
+LOGIN_URLS = [
+    "https://oname.kr/intro/adult_im.html",
+    "https://showdang.kr/intro/adult_im.html",
+    "https://www.bananamall.co.kr/",
+]
 INPUT_ID = ['//*[@id="member_id"]', r'//*[@id="member_id"]', r"//*[@id='id']"]
 INPUT_PWD = [
     '//*[@id="member_passwd"]',
@@ -40,7 +44,7 @@ INPUT_PWD = [
 BTN_MAIN_LOGIN = [
     "/html/body/div[3]/div[1]/ul/li[1]/a",
     "/html/body/div[5]/div[1]/div/div/a[4]",
-    "/html/body/div[8]/div[1]/div[2]/div/div[2]/ul/li[1]/a",
+    "//a[@title='로그인' and contains(@href, 'login_start')]",
 ]
 CHK_LOGIN = [
     "/html/body/div[3]/div[1]/div/b[1]/span[string-length(text()) > 0]",
@@ -48,19 +52,19 @@ CHK_LOGIN = [
     "/html/body/div[8]/div[1]/div[2]/div/div[2]/ul/li[2]/a[@title='로그아웃']",
 ]
 BTN_LOGIN = [
-    "/html/body/div[4]/div/form/div/div/fieldset/a",
-    "/html/body/div[6]/div/div/form/div/div/fieldset/a",
-    "/html/body/div[2]/div/div[5]/form/input[2]",
+    "//a[contains(@onclick, 'login') and @class='gobtn']",
+    "//a[contains(@onclick, 'login') and @class='login-btn']",
+    "//input[contains(@onclick, 'loginch')]",
 ]
 BTN_GOOGLE_LOGIN = [
     "//a [contains(@onclick, 'MemberAction') and contains(@onclick,'googleplus')]",
     "//a [contains(@onclick, 'snsLogin') and contains(@onclick,'google')]",
-    "/html/body/div[2]/div/div[5]/div[2]/a[4]/img",
+    "//a[contains(@href, 'google_login')]/img",
 ]
 BTN_KAKAO_LOGIN = [
     "//a [contains(@onclick, 'MemberAction') and contains(@onclick,'kakaosyncLogin')]",
     "//a [contains(@onclick, 'snsLogin') and contains(@onclick,'kakao')]",
-    "/html/body/div[2]/div/div[5]/div[2]/a[2]/img",
+    "//a[contains(@href, 'kakao_login')]/img",
 ]
 BTN_STAMP = [
     "//a[contains(@onclick, 'attend_send')]",
