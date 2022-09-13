@@ -1,6 +1,6 @@
 import sys
 import traceback
-from os import path
+from os import path, remove
 from urllib.parse import urlsplit, urlunsplit
 
 import yaml
@@ -30,6 +30,7 @@ STAMP_URLS = [
     "https://showdang.kr/attend/stamp.html",
     "https://www.bananamall.co.kr/etc/attendance.php",
 ]
+LOGIN_URLS = ["https://oname.kr/intro/adult_im.html", "https://showdang.kr/intro/adult_im.html", ""]
 INPUT_ID = ['//*[@id="member_id"]', r'//*[@id="member_id"]', r"//*[@id='id']"]
 INPUT_PWD = [
     '//*[@id="member_passwd"]',
@@ -52,13 +53,13 @@ BTN_LOGIN = [
     "/html/body/div[2]/div/div[5]/form/input[2]",
 ]
 BTN_GOOGLE_LOGIN = [
-    "/html/body/div[4]/div/form/div/div/fieldset/ul[2]/li[3]/a",
-    "/html/body/div[6]/div/div/form/div/div/fieldset/ul[1]/li[3]/a",
+    "//a [contains(@onclick, 'MemberAction') and contains(@onclick,'googleplus')]",
+    "//a [contains(@onclick, 'snsLogin') and contains(@onclick,'google')]",
     "/html/body/div[2]/div/div[5]/div[2]/a[4]/img",
 ]
 BTN_KAKAO_LOGIN = [
-    "/html/body/div[4]/div/form/div/div/fieldset/ul[2]/li[4]/a",
-    "/html/body/div[6]/div/div/form/div/div/fieldset/ul[1]/li[4]/a",
+    "//a [contains(@onclick, 'MemberAction') and contains(@onclick,'kakaosyncLogin')]",
+    "//a [contains(@onclick, 'snsLogin') and contains(@onclick,'kakao')]",
     "/html/body/div[2]/div/div[5]/div[2]/a[2]/img",
 ]
 BTN_STAMP = [
@@ -114,7 +115,7 @@ if __name__ == "__main__":
 
     def login(driver, site):
         if not chklogin(driver, site):
-            if site != BANANA:
+            if site != BANANA and remove_query(driver.current_url) != LOGIN_URLS[site]:
                 mainlogin = wait.until(EC.presence_of_element_located((By.XPATH, BTN_MAIN_LOGIN[site])))
                 mainlogin.click()
 
@@ -166,6 +167,7 @@ if __name__ == "__main__":
             return None
 
         driver.get(URLS[site])
+        # driver.implicitly_wait(3)
         login(driver, site)
         print("로그인 성공")
 
