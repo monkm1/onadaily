@@ -1,5 +1,6 @@
 import sys
 import traceback
+from argparse import Action
 from os import path
 from urllib.parse import urlsplit, urlunsplit
 
@@ -8,6 +9,7 @@ from selenium import webdriver
 from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.chrome.service import Service as ChromeService
+from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC  # noqa
 from selenium.webdriver.support.ui import WebDriverWait
@@ -143,18 +145,30 @@ if __name__ == "__main__":
         print(f"datadir required : {datadir_required()}")
         print(f"current url : {driver.current_url}")
 
+    def wait_for(driver, xpath):
+        return wait.until(EC.presence_of_element_located((By.XPATH, xpath)))
+
+    def move_to(driver, element):
+        action = ActionChains(driver)
+        action.move_to_element(element).perform()
+
+    def wait_move_click(driver, xpath):
+        element = wait_for(driver, xpath)
+        move_to(driver, element)
+        element.click()
+        return element
+
     def login(driver, site):
         if not chklogined(driver, site):
             if not chkloginurl(driver, site):
-                mainlogin = wait.until(EC.presence_of_element_located((By.XPATH, BTN_MAIN_LOGIN[site])))
-                mainlogin.click()
+                wait_move_click(driver, BTN_MAIN_LOGIN[site])
 
             try:
                 loginxpath = ""
                 if getoption(site, "login") == "default":
-                    idform = wait.until(EC.presence_of_element_located((By.XPATH, INPUT_ID[site])))
-                    pwdform = driver.find_element(By.XPATH, INPUT_PWD[site])
+                    idform = wait_move_click(driver, INPUT_ID[site])
                     idform.send_keys(getoption(site, "id"))
+                    pwdform = wait_move_click(driver, INPUT_PWD[site])
                     pwdform.send_keys(getoption(site, "password"))  # write id and password
 
                     loginxpath = BTN_LOGIN[site]
@@ -163,8 +177,7 @@ if __name__ == "__main__":
                 elif getoption(site, "login") == "google":
                     loginxpath = BTN_GOOGLE_LOGIN[site]
 
-                loginbtn = wait.until(EC.presence_of_element_located((By.XPATH, loginxpath)))
-                loginbtn.click()
+                wait_move_click(driver, loginxpath)
             except TimeoutException:
                 if driver.current_url != STAMP_URLS[site]:
                     raise
@@ -173,8 +186,7 @@ if __name__ == "__main__":
 
     def stamp(driver, site):
         try:
-            checkbtn = wait.until(EC.presence_of_element_located((By.XPATH, BTN_STAMP[site])))
-            checkbtn.click()
+            wait_move_click(driver, BTN_STAMP[site])
 
             if site == ONAMI or site == SHOWDANG or site == BANANA:
                 wait.until(EC.alert_is_present())
