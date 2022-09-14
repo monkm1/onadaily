@@ -155,7 +155,7 @@ if __name__ == "__main__":
     def wait_move_click(driver, xpath):
         element = wait_for(driver, xpath)
         move_to(driver, element)
-        element.click()
+        driver.execute_script('arguments[0].click()', element)
         return element
 
     def login(driver, site):
