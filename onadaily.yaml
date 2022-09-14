@@ -1,7 +1,8 @@
 common:
   datadir: null # Use "%localappdata%\\Google\\Chrome\\User Data" for google or kakao login.
   profile: null # Use "default" for google or kakao login in default chrome profile.
-  entertoquit: true # if false, you cannot see the error message.
+  entertoquit: true # If true, press Enter to exit the program.
+  waittime: 5 # Maximum wait time for page loading.
 
 # Write id and password if login is 'default'.
 

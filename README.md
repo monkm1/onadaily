@@ -16,8 +16,8 @@
 common:
   datadir: null # 일반 로그인'만' 사용한다면 이 부분은 입력하지 않아도 됩니다.
   profile: null
-  entertoquit: true
-
+  entertoquit: true # true 이면, 종료할 때 enter 키를 눌러야 합니다.
+  waittime: 5 # 웹 페이지가 로딩될때까지의 대기 시간(초)입니다. 이 시간이 지나면 오류로 처리됩니다.
 onami:
   enable: true
   login: default
@@ -32,7 +32,8 @@ onami:
 ### 구글/카카오 로그인 사용자
 * 사이트 별로 자동 출첵을 사용하려면 *enable*을 *true*로 바꿉니다.
 * 구글 크롬 기본 프로필에 사용하고자 하는 사이트 구글/카카오 자동로그인을 해놓습니다.
-* *datadir*과 *profile*을 설명처럼 바꿉니다.
+* 사용하는 크롬 프로필 창은 꺼진 상태로 진행해야 합니다.
+* *datadir*과 *profile*을 주석처럼 바꿉니다.
 * *login*을 구글 로그인이면 *google*, 카카오면 *kakao*로 바꿉니다.
 
 #### 예시
@@ -40,8 +41,8 @@ onami:
 common:
   datadir: "%localappdata%\\Google\\Chrome\\User Data" # 크롬의 User Data 경로
   profile: "default" # 기본 프로필이 아닌 다른 프로필을 사용해도 됩니다.
-  entertoquit: true
-
+  entertoquit: true # true 이면, 종료할 때 enter 키를 눌러야 합니다.
+  waittime: 5 # 웹 페이지가 로딩될때까지의 대기 시간(초)입니다. 이 시간이 지나면 오류로 처리됩니다.
 onami:
   enable: true
   login: kakao # 카카오 로그인 사용
@@ -57,10 +58,10 @@ onami:
 common:
   datadir: "%localappdata%\\Google\\Chrome\\User Data"
   profile: "default"
-  entertoquit: true # if false, you cannot see the error message.
+  entertoquit: true
+  waittime: 5
 
 # Write id and password if login is 'default'.
-
 onami:
   enable: true
   login: default
@@ -79,4 +80,4 @@ banana:
   id: null
   password: null
 ```
-압축을 풀고, onadaily.exe 로 실행합니다.
+onadaily.exe 로 실행합니다.

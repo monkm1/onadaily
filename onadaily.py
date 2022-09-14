@@ -92,16 +92,25 @@ if __name__ == "__main__":
         return any(checklist)
 
     def check_yaml_valid():
+        edited = False
+        if "entertoquit" not in settings["common"]:
+            settings["common"]["entertoquit"] = True
+            edited = True
+        if "waittime" not in settings["common"]:
+            settings["common"]["waittime"] = 3
+            edited = True
+
+        if edited:
+            with open(SETTING_FILE_NAME, "w") as f:
+                yaml.dump(settings, f, sort_keys=False)
         if datadir_required():
             if getoption("common", "datadir") is None or getoption("common", "profile") is None:
-                print("구글/카카오 로그인을 사용하려면 설정 파일의 datadir, profile을 지정해 주세요.")
-                raise YamlError()
+                raise YamlError("구글/카카오 로그인을 사용하려면 설정 파일의 datadir, profile을 지정해 주세요.")
 
         for site in SITES:
             if getoption(site, "enable") is True and getoption(site, "login") == "default":
                 if getoption(site, "id") is None or getoption(site, "password") is None:
-                    print(f"설정 파일의 {SITE_NAMES[site]} 아이디와 패스워드를 지정해 주세요.")
-                    raise YamlError()
+                    raise YamlError(f"설정 파일의 {SITE_NAMES[site]} 아이디와 패스워드를 지정해 주세요.")
 
     def remove_query(url):
         return urlunsplit(urlsplit(url)._replace(query="", fragment=""))
@@ -227,7 +236,7 @@ if __name__ == "__main__":
 
         service = ChromeService(ChromeDriverManager().install())
         driver = webdriver.Chrome(service=service, options=options)
-        wait = WebDriverWait(driver, 3)
+        wait = WebDriverWait(driver, getoption("common", "waittime"))
 
         for site in SITES:
             check(driver, site)
