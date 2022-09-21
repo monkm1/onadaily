@@ -37,6 +37,7 @@ LOGIN_URLS = [
     "https://showdang.kr/intro/adult_im.html",
     "https://www.bananamall.co.kr/",
 ]
+LOGIN_URLS_ADULT_PASS = ["https://oname.kr/member/login.html", "https://showdang.kr/member/login.html"]
 INPUT_ID = ['//*[@id="member_id"]', r'//*[@id="member_id"]', r"//*[@id='id']"]
 INPUT_PWD = [
     '//*[@id="member_passwd"]',
@@ -44,14 +45,14 @@ INPUT_PWD = [
     "//*[@id='passwd']",
 ]
 BTN_MAIN_LOGIN = [
-    "/html/body/div[3]/div[1]/ul/li[1]/a",
-    "/html/body/div[5]/div[1]/div/div/a[4]",
+    "//a[text() = '로그인']",
+    "//a[text() = '로그인']",
     "//a[@title='로그인' and contains(@href, 'login_start')]",
 ]
 CHK_LOGIN = [
-    "/html/body/div[3]/div[1]/div/b[1]/span[string-length(text()) > 0]",
-    "/html/body/div[5]/div[1]/div/div/span[2]/strong/span[string-length(text()) > 0]",
-    "/html/body/div[8]/div[1]/div[2]/div/div[2]/ul/li[2]/a[@title='로그아웃']",
+    "//span[contains(@class, 'member-var-name') and string-length(text()) > 0]",
+    "//span[contains(@class, 'member-var-name') and string-length(text()) > 0]",
+    "//a[@title='로그아웃' and @title = '로그아웃']",
 ]
 BTN_LOGIN = [
     "//a[contains(@onclick, 'login')]",
@@ -71,7 +72,7 @@ BTN_KAKAO_LOGIN = [
 BTN_STAMP = [
     "//a[contains(@onclick, 'attend_send')]/img",
     "//a[contains(@onclick, 'attend_send')]",
-    "/html/body/div[8]/div[2]/div[6]/div[2]/div[1]/div/a",
+    "//a[contains(@href, 'attendance_check')]",
 ]
 
 
@@ -155,13 +156,17 @@ if __name__ == "__main__":
     def wait_move_click(driver, xpath):
         element = wait_for(driver, xpath)
         move_to(driver, element)
-        driver.execute_script('arguments[0].click()', element)
+        driver.execute_script("arguments[0].click()", element)
         return element
 
     def login(driver, site):
         if not chklogined(driver, site):
             if not chkloginurl(driver, site):
-                wait_move_click(driver, BTN_MAIN_LOGIN[site])
+
+                if site == BANANA:
+                    wait_move_click(driver, BTN_MAIN_LOGIN[site])
+                else:
+                    driver.get(LOGIN_URLS_ADULT_PASS[site])
 
             try:
                 loginxpath = ""
@@ -176,7 +181,6 @@ if __name__ == "__main__":
                     loginxpath = BTN_KAKAO_LOGIN[site]
                 elif getoption(site, "login") == "google":
                     loginxpath = BTN_GOOGLE_LOGIN[site]
-
                 wait_move_click(driver, loginxpath)
             except TimeoutException:
                 if driver.current_url != STAMP_URLS[site]:

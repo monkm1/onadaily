@@ -1,5 +1,5 @@
 # onadaily
-'그 사이트들' 출석체크 자동화 프로그램입니다.
+'그 사이트들' 출석체크 자동화 프로그램입니다. 이 프로그램을 사용함으로써 발생하는 모든 불이익은 사용자의 책임입니다.
 
 ## download
 [다운로드](https://github.com/monkm1/onadaily/releases/latest)
