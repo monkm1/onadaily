@@ -6,39 +6,27 @@ on:
       - "v*.*.*"
 
 jobs:
-  build:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v2
-      - name: build
-        uses: JackMcKew/pyinstaller-action-windows@main
-        with:
-          path: .
-      - name: copy config file
-        run: |
-          cp onadaily.yaml dist/windows/onadaily/
-      - name: Archiving dist
-        run: |
-          (cd dist/windows/onadaily && zip -r onadaily-windows.zip *)
-          cp dist/windows/onadaily/onadaily-windows.zip .
-          ls -al
-      - name: Release
-        uses: softprops/action-gh-release@v1
-        with:
-          files: onadaily-windows.zip
   windows:
     runs-on: windows-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v2
+      - name: Cache
+        uses: actions/cache@v2
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
       - name: Install dependencies
         run: |
           pip install -r requirements.txt
           pip install pyinstaller
         shell: bash
       - name: Build
-        run: pyinstaller --onefile onadaily.py
+        run: |
+          pyinstaller --onefile onadaily.py
+          ls -al
         shell: bash
       - name: Copy config file
         run: cp onadaily.yaml dist/
@@ -46,8 +34,8 @@ jobs:
       - name : Archiving
         run: |
           cd dist
-          zip onadaily-windows-onefile.zip onadaily.exe onadaily.yaml
-        shell: bash
+          Compress-Archive .\* onadaily-windows-onefile.zip
+        shell: powershell
       - name: Release
         uses: softprops/action-gh-release@v1
         with:
