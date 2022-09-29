@@ -39,4 +39,4 @@ jobs:
       - name: Release
         uses: softprops/action-gh-release@v1
         with:
-          files: onadaily-windows.zip
+          files: onadaily-windows-onefile.zip
