@@ -27,3 +27,27 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           files: onadaily-windows.zip
+  windows:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install pyinstaller
+        shell: bash
+      - name: Build
+        run: python -m pyinstaller --onefile onadaily.py
+      - name: Copy config file
+        run: cp onadaily.yaml dist/
+        shell: bash
+      - name : Archiving
+        run: |
+          cd dist
+          zip onadaily-windows-onefile.zip onadaily.exe onadaily.yaml
+        shell: bash
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: onadaily-windows.zip
