@@ -1,6 +1,5 @@
 import sys
 import traceback
-from argparse import Action
 from os import path
 from urllib.parse import urlsplit, urlunsplit
 
@@ -20,59 +19,63 @@ SETTING_FILE_NAME = "onadaily.yaml"
 ONAMI = 0
 SHOWDANG = 1
 BANANA = 2
-SITES = [ONAMI, SHOWDANG, BANANA]
-SITE_NAMES = ["onami", "showdang", "banana"]
+DINGDONG = 3
+SITES = [ONAMI, SHOWDANG, BANANA, DINGDONG]
+SITE_NAMES = ["onami", "showdang", "banana", "dingdong"]
 URLS = [
     "https://oname.kr/index.html",
     "https://showdang.kr/",
     "https://www.bananamall.co.kr/",
+    "https://www.dingdong.co.kr",
 ]
 STAMP_URLS = [
     "https://oname.kr/attend/stamp.html",
     "https://showdang.kr/attend/stamp.html",
     "https://www.bananamall.co.kr/etc/attendance.php",
+    "https://www.dingdong.co.kr/attend/stamp.html",
 ]
 LOGIN_URLS = [
-    "https://oname.kr/intro/adult_im.html",
-    "https://showdang.kr/intro/adult_im.html",
+    "https://oname.kr/member/login.html",
+    "https://showdang.kr/member/login.html",
     "https://www.bananamall.co.kr/",
+    "https://dingdong.co.kr/member/login.html",
 ]
-LOGIN_URLS_ADULT_PASS = ["https://oname.kr/member/login.html", "https://showdang.kr/member/login.html"]
-INPUT_ID = ['//*[@id="member_id"]', r'//*[@id="member_id"]', r"//*[@id='id']"]
+INPUT_ID = ['//*[@id="member_id"]', r'//*[@id="member_id"]', r"//*[@id='id']", "//input[@id='member_id']"]
 INPUT_PWD = [
     '//*[@id="member_passwd"]',
     r'//*[@id="member_passwd"]',
     "//*[@id='passwd']",
-]
-BTN_MAIN_LOGIN = [
-    "//a[text() = '로그인']",
-    "//a[text() = '로그인']",
-    "//a[@title='로그인' and contains(@href, 'login_start')]",
+    "//input[@id='member_passwd']",
 ]
 CHK_LOGIN = [
     "//span[contains(@class, 'member-var-name') and string-length(text()) > 0]",
     "//span[contains(@class, 'member-var-name') and string-length(text()) > 0]",
-    "//a[@title='로그아웃' and @title = '로그아웃']",
+    "//a[@title='로그아웃']",
+    "//a[text()='로그아웃']",
 ]
 BTN_LOGIN = [
     "//a[contains(@onclick, 'login')]",
     "//a[contains(@onclick, 'login')]",
     "//input[contains(@onclick, 'loginch')]",
+    "//a[contains(@onclick, 'login')]/img",
 ]
 BTN_GOOGLE_LOGIN = [
     "//a [contains(@onclick, 'MemberAction') and contains(@onclick,'googleplus')]",
     "//a [contains(@onclick, 'snsLogin') and contains(@onclick,'google')]",
     "//a[contains(@href, 'google_login')]/img",
+    "//a [contains(@onclick, 'MemberAction') and contains(@onclick,'googleplus')]/img",
 ]
 BTN_KAKAO_LOGIN = [
     "//a [contains(@onclick, 'MemberAction') and contains(@onclick,'kakaosyncLogin')]",
     "//a [contains(@onclick, 'snsLogin') and contains(@onclick,'kakao')]",
     "//a[contains(@href, 'kakao_login')]/img",
+    "//a [contains(@onclick, 'MemberAction') and contains(@onclick,'kakaosyncLogin')]/img",
 ]
 BTN_STAMP = [
     "//a[contains(@onclick, 'attend_send')]/img",
     "//a[contains(@onclick, 'attend_send')]",
     "//a[contains(@href, 'attendance_check')]",
+    "//a[contains(@onclick, 'attend_send')]",
 ]
 
 
@@ -95,6 +98,7 @@ if __name__ == "__main__":
         return any(checklist)
 
     def check_yaml_valid():
+        default_section = {"enable": False, "login": "default", "id": None, "password": None}
         edited = False
         if "entertoquit" not in settings["common"]:
             settings["common"]["entertoquit"] = True
@@ -102,6 +106,11 @@ if __name__ == "__main__":
         if "waittime" not in settings["common"]:
             settings["common"]["waittime"] = 3
             edited = True
+
+        for site in SITE_NAMES:
+            if site not in settings:
+                settings[site] = default_section.copy()
+                edited = True
 
         if edited:
             with open(SETTING_FILE_NAME, "w") as f:
@@ -161,30 +170,22 @@ if __name__ == "__main__":
 
     def login(driver, site):
         if not chklogined(driver, site):
-            if not chkloginurl(driver, site):
+            if site != BANANA:
+                driver.get(LOGIN_URLS[site])
 
-                if site == BANANA:
-                    wait_move_click(driver, BTN_MAIN_LOGIN[site])
-                else:
-                    driver.get(LOGIN_URLS_ADULT_PASS[site])
+            loginxpath = ""
+            if getoption(site, "login") == "default":
+                idform = wait_move_click(driver, INPUT_ID[site])
+                idform.send_keys(getoption(site, "id"))
+                pwdform = wait_move_click(driver, INPUT_PWD[site])
+                pwdform.send_keys(getoption(site, "password"))  # write id and password
 
-            try:
-                loginxpath = ""
-                if getoption(site, "login") == "default":
-                    idform = wait_move_click(driver, INPUT_ID[site])
-                    idform.send_keys(getoption(site, "id"))
-                    pwdform = wait_move_click(driver, INPUT_PWD[site])
-                    pwdform.send_keys(getoption(site, "password"))  # write id and password
-
-                    loginxpath = BTN_LOGIN[site]
-                elif getoption(site, "login") == "kakao":
-                    loginxpath = BTN_KAKAO_LOGIN[site]
-                elif getoption(site, "login") == "google":
-                    loginxpath = BTN_GOOGLE_LOGIN[site]
-                wait_move_click(driver, loginxpath)
-            except TimeoutException:
-                if driver.current_url != STAMP_URLS[site]:
-                    raise
+                loginxpath = BTN_LOGIN[site]
+            elif getoption(site, "login") == "kakao":
+                loginxpath = BTN_KAKAO_LOGIN[site]
+            elif getoption(site, "login") == "google":
+                loginxpath = BTN_GOOGLE_LOGIN[site]
+            wait_move_click(driver, loginxpath)
 
             waitlogin(driver, site)
 
@@ -258,8 +259,8 @@ if __name__ == "__main__":
             check(driver, site)
         print("\n모든 출석 체크 완료")
 
-    except YamlError:
-        pass
+    except YamlError as ex:
+        print(ex)
     except Exception:
         print(traceback.format_exc())
         printsiteconfig(driver, site)

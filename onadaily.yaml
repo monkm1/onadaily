@@ -23,3 +23,9 @@ banana:
   login: default
   id: null
   password: null
+
+dingdong:
+  enable: false
+  login: default
+  id: null
+  password: null
