@@ -38,7 +38,8 @@ jobs:
           pip install pyinstaller
         shell: bash
       - name: Build
-        run: python -m pyinstaller --onefile onadaily.py
+        run: pyinstaller --onefile onadaily.py
+        shell: bash
       - name: Copy config file
         run: cp onadaily.yaml dist/
         shell: bash
