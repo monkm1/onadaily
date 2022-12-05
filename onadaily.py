@@ -261,6 +261,8 @@ if __name__ == "__main__":
 
     except YamlError as ex:
         print(ex)
+    except WebDriverException:
+        print("크롬을 열 수 없습니다. 구글/카카오 로그인을 사용하면 열려있는 크롬 창을 전부 닫고 실행해 주세요.")
     except Exception:
         print(traceback.format_exc())
         printsiteconfig(driver, site)
@@ -272,5 +274,5 @@ if __name__ == "__main__":
         except Exception:
             print(traceback.format_exc())
 
-        if getoption("common", "entertoquit"):
+        if "entertoquit" not in settings["common"] or getoption("common", "entertoquit"):
             input("종료하려면 Enter를 누르세요...")
