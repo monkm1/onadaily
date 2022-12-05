@@ -18,6 +18,7 @@ common:
   profile: null
   entertoquit: true # true 이면, 종료할 때 enter 키를 눌러야 합니다.
   waittime: 5 # 웹 페이지가 로딩될때까지의 대기 시간(초)입니다. 이 시간이 지나면 오류로 처리됩니다.
+  showhotdeal: false # true 이면, 할인 정보를 출력합니다.
 onami:
   enable: true
   login: default
@@ -43,6 +44,7 @@ common:
   profile: "default" # 기본 프로필이 아닌 다른 프로필을 사용해도 됩니다.
   entertoquit: true # true 이면, 종료할 때 enter 키를 눌러야 합니다.
   waittime: 5 # 웹 페이지가 로딩될때까지의 대기 시간(초)입니다. 이 시간이 지나면 오류로 처리됩니다.
+  showhotdeal: false # true 이면, 할인 정보를 출력합니다.
 onami:
   enable: true
   login: kakao # 카카오 로그인 사용
@@ -60,8 +62,8 @@ common:
   profile: "default"
   entertoquit: true
   waittime: 5
+  showhotdeal: false
 
-# Write id and password if login is 'default'.
 onami:
   enable: true
   login: default

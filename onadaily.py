@@ -4,8 +4,10 @@ from os import path
 from urllib.parse import urlsplit, urlunsplit
 
 import yaml
+from bs4 import BeautifulSoup
+from prettytable import PrettyTable
 from selenium import webdriver
-from selenium.common.exceptions import TimeoutException
+from selenium.common.exceptions import TimeoutException, WebDriverException
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.chrome.service import Service as ChromeService
 from selenium.webdriver.common.action_chains import ActionChains
@@ -77,12 +79,30 @@ BTN_STAMP = [
     "//a[contains(@href, 'attendance_check')]",
     "//a[contains(@onclick, 'attend_send')]",
 ]
+HOTDEAL_TABLE = [".ms-wrap", "#todaysale", "", ".ms-wrap"]
 
 
 if __name__ == "__main__":
 
     class YamlError(Exception):
         pass
+
+    class HotdealInfo(object):
+        name: str
+        price: str
+        dc_price: str
+
+        def __init__(self, name, price: str, dc_price):
+            self.name = name.strip()
+            if price[-1] != "원":
+                price += "원"
+            if dc_price[-1] != "원":
+                dc_price += "원"
+            self.price = price
+            self.dc_price = dc_price
+
+        def to_row(self):
+            return [self.name, self.price, self.dc_price]
 
     def getoption(site, option):
         section = "common"
@@ -104,7 +124,10 @@ if __name__ == "__main__":
             settings["common"]["entertoquit"] = True
             edited = True
         if "waittime" not in settings["common"]:
-            settings["common"]["waittime"] = 3
+            settings["common"]["waittime"] = 5
+            edited = True
+        if "showhotdeal" not in settings["common"]:
+            settings["common"]["showhotdeal"] = False
             edited = True
 
         for site in SITE_NAMES:
@@ -168,6 +191,43 @@ if __name__ == "__main__":
         driver.execute_script("arguments[0].click()", element)
         return element
 
+    def printhotdealinfo(driver, site):
+        soup = BeautifulSoup(driver.page_source, "html.parser")
+        soup = soup.select_one(HOTDEAL_TABLE[site])
+        products_all = soup.find_all("div")
+        products = []
+        for p in products_all:
+            if p.has_attr("data-swiper-slide-index") and "swiper-slide-duplicate" not in p["class"]:
+                productsoup = list(p.children)[1]
+
+                price = dc_price = name = "이게 보이면 오류"
+                if site == ONAMI:
+                    dc_price = productsoup.find("p", "price").find("span").text
+                    price = productsoup.find("strike").text
+                    name = productsoup.find("p", "name").text
+
+                elif site == SHOWDANG:
+                    price = productsoup.find("span", "or-price").text
+                    dc_price = productsoup.find("span", "sl-price").text
+                    name = productsoup.find("ul", "swiper-prd-info-name").text
+
+                elif site == DINGDONG:
+                    pricesoup = productsoup.find("ul", "xans-element-").find_all("li")
+                    for p in pricesoup:
+                        if p.text.strip().startswith("회원가"):
+                            price = p.find("span", recursive=False).text
+                        elif p.text.strip().startswith("반짝할인"):
+                            dc_price = p.find("span", recursive=False).text
+
+                    name = productsoup.find("p", "name").find(text=True, recursive=False)
+
+                products.append(HotdealInfo(name, price, dc_price))
+
+        table = PrettyTable()
+        table.field_names = ["품명", "정상가", "할인가"]
+        table.add_rows([x.to_row() for x in products])
+        print(table)
+
     def login(driver, site):
         if not chklogined(driver, site):
             if site != BANANA:
@@ -206,7 +266,7 @@ if __name__ == "__main__":
         except TimeoutException:
             return False
 
-    def check(driver, site):
+    def check(driver: webdriver.Chrome, site):
         print(f"== {SITE_NAMES[site]} ==")
 
         if getoption(site, "enable") is False:
@@ -217,6 +277,9 @@ if __name__ == "__main__":
         # driver.implicitly_wait(3)
         login(driver, site)
         print("로그인 성공")
+
+        if getoption("common", "showhotdeal"):
+            printhotdealinfo(driver, site)
 
         driver.get(STAMP_URLS[site])
         if stamp(driver, site):
