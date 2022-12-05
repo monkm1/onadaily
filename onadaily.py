@@ -278,7 +278,7 @@ if __name__ == "__main__":
         login(driver, site)
         print("로그인 성공")
 
-        if getoption("common", "showhotdeal"):
+        if getoption("common", "showhotdeal") and site != BANANA:
             printhotdealinfo(driver, site)
 
         driver.get(STAMP_URLS[site])
