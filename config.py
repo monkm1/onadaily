@@ -31,8 +31,8 @@ def check_yaml_valid():
     default_common = {"datadir": None, "profile": None, "entertoquit": None, "waittime": 5, "showhotdeal": False}
 
     for k, v in default_common.items():
-        if k not in settings:
-            settings[k] = v
+        if k not in settings["common"]:
+            settings["common"][k] = v
             edited = True
 
     for site in consts.SITE_NAMES:

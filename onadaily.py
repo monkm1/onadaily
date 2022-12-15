@@ -5,20 +5,16 @@ from urllib.parse import urlsplit, urlunsplit
 import yaml
 from bs4 import BeautifulSoup
 from prettytable import PrettyTable
-from selenium import webdriver
 from selenium.common.exceptions import TimeoutException, WebDriverException
 from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.chrome.service import Service as ChromeService
-from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC  # noqa
-from selenium.webdriver.support.ui import WebDriverWait
-from webdriver_manager.chrome import ChromeDriverManager
 
 import config
 import consts
 from classes import ConfigError, HotdealInfo
 from config import datadir_required, getoption, load_settings
+from Webdriverwrapper import Webdriverwrapper
 
 if __name__ == "__main__":
 
@@ -27,7 +23,7 @@ if __name__ == "__main__":
 
     def waitlogin(driver, site):
         chkxpath = consts.CHK_LOGIN[site]
-        wait.until(EC.presence_of_element_located((By.XPATH, chkxpath)))
+        driver.wait.until(EC.presence_of_element_located((By.XPATH, chkxpath)))
 
     def chklogined(driver, site):
         chkxpath = consts.CHK_LOGIN[site]
@@ -52,19 +48,6 @@ if __name__ == "__main__":
         print(f"login : {getoption(site, 'login')}")
         print(f"datadir required : {datadir_required()}")
         print(f"current url : {driver.current_url}")
-
-    def wait_for(driver, xpath):
-        return wait.until(EC.presence_of_element_located((By.XPATH, xpath)))
-
-    def move_to(driver, element):
-        action = ActionChains(driver)
-        action.move_to_element(element).perform()
-
-    def wait_move_click(driver, xpath):
-        element = wait_for(driver, xpath)
-        move_to(driver, element)
-        driver.execute_script("arguments[0].click()", element)
-        return element
 
     def printhotdealinfo(driver, site):
         soup = BeautifulSoup(driver.page_source, "html.parser")
@@ -110,9 +93,9 @@ if __name__ == "__main__":
 
             loginxpath = ""
             if getoption(site, "login") == "default":
-                idform = wait_move_click(driver, consts.INPUT_ID[site])
+                idform = driver.wait_move_click(consts.INPUT_ID[site])
                 idform.send_keys(getoption(site, "id"))
-                pwdform = wait_move_click(driver, consts.INPUT_PWD[site])
+                pwdform = driver.wait_move_click(consts.INPUT_PWD[site])
                 pwdform.send_keys(getoption(site, "password"))  # write id and password
 
                 loginxpath = consts.BTN_LOGIN[site]
@@ -120,28 +103,27 @@ if __name__ == "__main__":
                 loginxpath = consts.BTN_KAKAO_LOGIN[site]
             elif getoption(site, "login") == "google":
                 loginxpath = consts.BTN_GOOGLE_LOGIN[site]
-            wait_move_click(driver, loginxpath)
+            driver.wait_move_click(loginxpath)
 
             waitlogin(driver, site)
 
     def stamp(driver, site):
         try:
-            wait_move_click(driver, consts.BTN_STAMP[site])
+            driver.wait_move_click(consts.BTN_STAMP[site])
 
-            if site == consts.ONAMI or site == consts.SHOWDANG or site == consts.BANANA:
-                wait.until(EC.alert_is_present())
-                alert = driver.switch_to.alert
+            driver.wait.until(EC.alert_is_present())
+            alert = driver.switch_to.alert
 
-                if site == consts.BANANA and alert.text == "잠시후 다시 시도해 주세요." or alert.text == "이미 출석체크를 하셨습니다.":
-                    alert.accept()
-                    raise TimeoutException()
-
+            if site == consts.BANANA and alert.text == "잠시후 다시 시도해 주세요." or alert.text == "이미 출석체크를 하셨습니다.":
                 alert.accept()
+                raise TimeoutException()
+
+            alert.accept()
             return True
         except TimeoutException:
             return False
 
-    def check(driver: webdriver.Chrome, site):
+    def check(driver, site):
         print(f"== {consts.SITE_NAMES[site]} ==")
 
         if getoption(site, "enable") is False:
@@ -149,7 +131,6 @@ if __name__ == "__main__":
             return None
 
         driver.get(consts.URLS[site])
-        # driver.implicitly_wait(3)
         login(driver, site)
         print("로그인 성공")
 
@@ -163,7 +144,7 @@ if __name__ == "__main__":
             print("출석체크 버튼을 찾을 수 없습니다. 이미 체크 했거나 오류입니다.")
         print()
 
-    def set_chrome_options():
+    def get_chrome_options():
         options = Options()
         user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/103.0.0.0 Safari/537.36"  # noqa
         options.add_argument("user-agent=" + user_agent)
@@ -183,12 +164,7 @@ if __name__ == "__main__":
 
     try:
         load_settings()
-
-        options = set_chrome_options()
-
-        service = ChromeService(ChromeDriverManager().install())
-        driver = webdriver.Chrome(service=service, options=options)
-        wait = WebDriverWait(driver, getoption("common", "waittime"))
+        driver = Webdriverwrapper(get_chrome_options())
 
         for site in consts.SITES:
             check(driver, site)
