@@ -60,7 +60,7 @@ def load_settings():
     if len(sys.argv) > 1 and sys.argv[1] == "test":  # test mode
         consts.SETTING_FILE_NAME = "test.yaml"  # noqa
 
-    with open(consts.SETTING_FILE_NAME) as f:  # load yaml
+    with open(consts.SETTING_FILE_NAME, "r", encoding="utf-8") as f:  # load yaml
         global settings
         settings = dict(yaml.safe_load(f))
 
