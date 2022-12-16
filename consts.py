@@ -43,6 +43,7 @@ BTN_LOGIN = [
     "//input[contains(@onclick, 'loginch')]",
     "//a[contains(@onclick, 'login')]/img",
 ]
+
 BTN_GOOGLE_LOGIN = [
     "//a [contains(@onclick, 'MemberAction') and contains(@onclick,'googleplus')]",
     "//a [contains(@onclick, 'snsLogin') and contains(@onclick,'google')]",
@@ -55,6 +56,28 @@ BTN_KAKAO_LOGIN = [
     "//a[contains(@href, 'kakao_login')]/img",
     "//a [contains(@onclick, 'MemberAction') and contains(@onclick,'kakaosyncLogin')]/img",
 ]
+BTN_NAVER_LOGIN = [
+    "",
+    "",
+    "//a[contains(@href, 'naver_login')]/img",
+    "//a[contains(@onclick, 'MemberAction') and contains(@onclick,'naver')]/img",
+]
+BTN_FACEBOOK_LOGIN = [
+    "",
+    "",
+    "//a[contains(@href, 'facebook_login')]/img",
+    "//a[contains(@onclick, 'MemberAction') and contains(@onclick,'facebook')]/img",
+]
+BTN_TWITTER_LOGIN = ["", "", "//a[contains(@href, 'twitter_login')]/img", ""]
+
+LOGIN = {
+    "default": BTN_LOGIN,
+    "google": BTN_GOOGLE_LOGIN,
+    "kakao": BTN_KAKAO_LOGIN,
+    "naver": BTN_NAVER_LOGIN,
+    "facebook": BTN_FACEBOOK_LOGIN,
+    "twitter": BTN_TWITTER_LOGIN,
+}
 BTN_STAMP = [
     "//a[contains(@onclick, 'attend_send')]/img",
     "//a[contains(@onclick, 'attend_send')]",

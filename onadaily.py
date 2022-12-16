@@ -97,17 +97,16 @@ if __name__ == "__main__":
                 driver.get(consts.LOGIN_URLS[site])
 
             loginxpath = ""
-            if getoption(site, "login") == "default":
+            loginoption = getoption(site, "login")
+            if loginoption == "default":
                 idform = driver.wait_move_click(consts.INPUT_ID[site])
                 idform.send_keys(getoption(site, "id"))
                 pwdform = driver.wait_move_click(consts.INPUT_PWD[site])
                 pwdform.send_keys(getoption(site, "password"))  # write id and password
 
-                loginxpath = consts.BTN_LOGIN[site]
-            elif getoption(site, "login") == "kakao":
-                loginxpath = consts.BTN_KAKAO_LOGIN[site]
-            elif getoption(site, "login") == "google":
-                loginxpath = consts.BTN_GOOGLE_LOGIN[site]
+                loginxpath = consts.LOGIN["default"][site]
+            else:
+                loginxpath = consts.LOGIN[loginoption][site]
             driver.wait_move_click(loginxpath)
 
             waitlogin(driver, site)
