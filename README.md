@@ -1,7 +1,7 @@
 # onadaily
 '그 사이트들' 출석체크 자동화 프로그램입니다. 이 프로그램을 사용함으로써 발생하는 모든 불이익은 사용자의 책임입니다.
 
-## download
+## Download
 [다운로드](https://github.com/monkm1/onadaily/releases/latest)
 
 ## Usage
@@ -36,6 +36,7 @@ onami:
 * 사용하는 크롬 프로필 창은 꺼진 상태로 진행해야 합니다.
 * *datadir*과 *profile*을 주석처럼 바꿉니다.
 * *login*을 구글 로그인이면 *google*, 카카오면 *kakao*로 바꿉니다.
+* 사이트 별로 네이버, 페이스북, 트위터 로그인을 사용할 수 있습니다. (*naver*, *facebook*, *twitter* 사용)
 
 #### 예시
 ```yaml
