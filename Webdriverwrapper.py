@@ -27,3 +27,9 @@ class Webdriverwrapper(webdriver.Chrome):
         self.move_to(element)
         self.execute_script("arguments[0].click()", element)
         return element
+
+    def find_xpath(self, xpath):
+        return self.find_elements(By.XPATH, xpath)
+
+    def wait_for_alert(self):
+        self.wait.until(EC.alert_is_present())

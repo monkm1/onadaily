@@ -8,7 +8,6 @@ from prettytable import PrettyTable
 from selenium.common.exceptions import TimeoutException, WebDriverException
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
-from selenium.webdriver.support import expected_conditions as EC  # noqa
 
 import config
 import consts
@@ -23,11 +22,11 @@ if __name__ == "__main__":
 
     def waitlogin(driver, site):
         chkxpath = consts.CHK_LOGIN[site]
-        driver.wait.until(EC.presence_of_element_located((By.XPATH, chkxpath)))
+        driver.wait_for(chkxpath)
 
     def chklogined(driver, site):
         chkxpath = consts.CHK_LOGIN[site]
-        ele = driver.find_elements(By.XPATH, chkxpath)
+        ele = driver.find_xpath(chkxpath)
         if ele:
             return True
         return False
@@ -49,8 +48,8 @@ if __name__ == "__main__":
         print(f"datadir required : {datadir_required()}")
         print(f"current url : {driver.current_url}")
 
-    def printhotdealinfo(driver, site):
-        soup = BeautifulSoup(driver.page_source, "html.parser")
+    def printhotdealinfo(page_source, site):
+        soup = BeautifulSoup(page_source, "html.parser")
         soup = soup.select_one(consts.HOTDEAL_TABLE[site])
         products_all = soup.find_all("div")
         products = []
@@ -117,7 +116,7 @@ if __name__ == "__main__":
         try:
             driver.wait_move_click(consts.BTN_STAMP[site])
 
-            driver.wait.until(EC.alert_is_present())
+            driver.wait_for_alert()
             alert = driver.switch_to.alert
 
             if site == consts.BANANA and alert.text == "잠시후 다시 시도해 주세요." or alert.text == "이미 출석체크를 하셨습니다.":
@@ -141,7 +140,7 @@ if __name__ == "__main__":
         print("로그인 성공")
 
         if getoption("common", "showhotdeal") and site != consts.BANANA:
-            printhotdealinfo(driver, site)
+            printhotdealinfo(driver.page_source, site)
 
         driver.get(consts.STAMP_URLS[site])
         if stamp(driver, site):
