@@ -9,14 +9,14 @@ FILE_LOADED = False
 settings = {}
 
 
-def getoption(site, option):
+def getoption(site: int, option: str):
     section = "common"
     if site != "common":
         section = consts.SITE_NAMES[site]
     return settings[section][option]
 
 
-def datadir_required():
+def datadir_required() -> bool:
     checklist = []
     for site in consts.SITES:
         if getoption(site, "enable") is True:
@@ -29,6 +29,9 @@ def check_yaml_valid():
     edited = False
 
     default_common = {"datadir": None, "profile": None, "entertoquit": None, "waittime": 5, "showhotdeal": False}
+
+    if "common" not in settings:
+        settings["common"] = {}
 
     for k, v in default_common.items():
         if k not in settings["common"]:
@@ -48,12 +51,12 @@ def check_yaml_valid():
             raise ConfigError("구글/카카오 로그인을 사용하려면 설정 파일의 datadir, profile을 지정해 주세요.")
 
     for site in consts.SITES:
-        login = getoption(site, "login")
-        if getoption(site, "enable") is True and login == "default":
-            if getoption(site, "id") is None or getoption(site, "password") is None:
-                raise ConfigError(f"설정 파일의 {consts.ITE_NAMES[site]} 아이디와 패스워드를 지정해 주세요.")
-        if consts.LOGIN[login][site] == "":
-            raise ConfigError(f"{consts.SITE_NAMES[site]}의 {login} 로그인은 지원하지 않습니다.")
+        if getoption(site, "enable") is True:
+            login = getoption(site, "login")
+            if login == "default" and (getoption(site, "id") is None or getoption(site, "password") is None):
+                raise ConfigError(f"설정 파일의 {consts.SITE_NAMES[site]} 아이디와 패스워드를 지정해 주세요.")
+            if consts.LOGIN[login][site] is None:
+                raise ConfigError(f"{consts.SITE_NAMES[site]}의 {login} 로그인은 지원하지 않습니다.")
 
 
 def load_settings():
@@ -70,7 +73,7 @@ def load_settings():
     FILE_LOADED = True
 
 
-def entertoquit():
+def entertoquit() -> bool:
     if not FILE_LOADED:
         return True
 

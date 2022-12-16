@@ -7,8 +7,10 @@ class HotdealInfo(object):
     price: str
     dc_price: str
 
-    def __init__(self, name, price: str, dc_price):
+    def __init__(self, name: str, price: str, dc_price: str):
         self.name = name.strip()
+        price = price.strip()
+        dc_price = dc_price.strip()
         if price[-1] != "원":
             price += "원"
         if dc_price[-1] != "원":
@@ -16,5 +18,5 @@ class HotdealInfo(object):
         self.price = price
         self.dc_price = dc_price
 
-    def to_row(self):
+    def to_row(self) -> list:
         return [self.name, self.price, self.dc_price]

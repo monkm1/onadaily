@@ -57,18 +57,18 @@ BTN_KAKAO_LOGIN = [
     "//a [contains(@onclick, 'MemberAction') and contains(@onclick,'kakaosyncLogin')]/img",
 ]
 BTN_NAVER_LOGIN = [
-    "",
-    "",
+    None,
+    None,
     "//a[contains(@href, 'naver_login')]/img",
     "//a[contains(@onclick, 'MemberAction') and contains(@onclick,'naver')]/img",
 ]
 BTN_FACEBOOK_LOGIN = [
-    "",
-    "",
+    None,
+    None,
     "//a[contains(@href, 'facebook_login')]/img",
     "//a[contains(@onclick, 'MemberAction') and contains(@onclick,'facebook')]/img",
 ]
-BTN_TWITTER_LOGIN = ["", "", "//a[contains(@href, 'twitter_login')]/img", ""]
+BTN_TWITTER_LOGIN = [None, None, "//a[contains(@href, 'twitter_login')]/img", None]
 
 LOGIN = {
     "default": BTN_LOGIN,
@@ -84,4 +84,4 @@ BTN_STAMP = [
     "//a[contains(@href, 'attendance_check')]",
     "//a[contains(@onclick, 'attend_send')]",
 ]
-HOTDEAL_TABLE = [".ms-wrap", "#todaysale", "", ".ms-wrap"]
+HOTDEAL_TABLE = [".ms-wrap", "#todaysale", None, ".ms-wrap"]

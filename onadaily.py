@@ -13,25 +13,25 @@ import config
 import consts
 from classes import ConfigError, HotdealInfo
 from config import datadir_required, getoption, load_settings
-from Webdriverwrapper import Webdriverwrapper
+from webdriverwrapper import Webdriverwrapper
 
 if __name__ == "__main__":
 
-    def remove_query(url):
+    def remove_query(url) -> str:
         return urlunsplit(urlsplit(url)._replace(query="", fragment=""))
 
-    def waitlogin(driver, site):
+    def waitlogin(driver: Webdriverwrapper, site: int):
         chkxpath = consts.CHK_LOGIN[site]
         driver.wait_for(chkxpath)
 
-    def chklogined(driver, site):
+    def chklogined(driver: Webdriverwrapper, site: int) -> bool:
         chkxpath = consts.CHK_LOGIN[site]
         ele = driver.find_xpath(chkxpath)
         if ele:
             return True
         return False
 
-    def chkloginurl(driver, site):
+    def chkloginurl(driver: Webdriverwrapper, site: int) -> bool:
         if site != consts.BANANA:
             if remove_query(driver.current_url) != consts.LOGIN_URLS[site]:
                 return False
@@ -41,14 +41,14 @@ if __name__ == "__main__":
                 return True
             return False
 
-    def printsiteconfig(driver, site):
+    def printsiteconfig(driver: Webdriverwrapper, site: int) -> None:
         print(f"site : {site}/{consts.SITE_NAMES[site]}")
         print(f"enable : {getoption(site, 'enable')}")
         print(f"login : {getoption(site, 'login')}")
         print(f"datadir required : {datadir_required()}")
         print(f"current url : {driver.current_url}")
 
-    def printhotdealinfo(page_source, site):
+    def printhotdealinfo(page_source: str, site: int):
         soup = BeautifulSoup(page_source, "html.parser")
         soup = soup.select_one(consts.HOTDEAL_TABLE[site])
         products_all = soup.find_all("div")
@@ -91,7 +91,7 @@ if __name__ == "__main__":
         table.add_rows([x.to_row() for x in products])
         print(table)
 
-    def login(driver, site):
+    def login(driver: Webdriverwrapper, site: int):
         if not chklogined(driver, site):
             if site != consts.BANANA:
                 driver.get(consts.LOGIN_URLS[site])
@@ -111,7 +111,7 @@ if __name__ == "__main__":
 
             waitlogin(driver, site)
 
-    def stamp(driver, site):
+    def stamp(driver: Webdriverwrapper, site: int) -> bool:
         try:
             driver.wait_move_click(consts.BTN_STAMP[site])
 
@@ -127,7 +127,7 @@ if __name__ == "__main__":
         except TimeoutException:
             return False
 
-    def check(driver, site):
+    def check(driver: Webdriverwrapper, site: int):
         print(f"== {consts.SITE_NAMES[site]} ==")
 
         if getoption(site, "enable") is False:
