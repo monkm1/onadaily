@@ -48,9 +48,12 @@ def check_yaml_valid():
             raise ConfigError("구글/카카오 로그인을 사용하려면 설정 파일의 datadir, profile을 지정해 주세요.")
 
     for site in consts.SITES:
-        if getoption(site, "enable") is True and getoption(site, "login") == "default":
+        login = getoption(site, "login")
+        if getoption(site, "enable") is True and login == "default":
             if getoption(site, "id") is None or getoption(site, "password") is None:
                 raise ConfigError(f"설정 파일의 {consts.ITE_NAMES[site]} 아이디와 패스워드를 지정해 주세요.")
+        if consts.LOGIN[login][site] == "":
+            raise ConfigError(f"{consts.SITE_NAMES[site]}의 {login} 로그인은 지원하지 않습니다.")
 
 
 def load_settings():

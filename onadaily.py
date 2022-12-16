@@ -71,11 +71,17 @@ if __name__ == "__main__":
 
                 elif site == consts.DINGDONG:
                     pricesoup = productsoup.find("ul", "xans-element-").find_all("li")
+                    reward = ""
                     for p in pricesoup:
                         if p.text.strip().startswith("회원가"):
                             price = p.find("span", recursive=False).text
                         elif p.text.strip().startswith("반짝할인"):
                             dc_price = p.find("span", recursive=False).text
+                        elif p.text.strip().startswith("적립금"):
+                            reward = p.find("span", recursive=False).text
+
+                    if dc_price == "이게 보이면 오류":
+                        dc_price = "(적립금)" + reward
 
                     name = productsoup.find("p", "name").find(text=True, recursive=False)
 
@@ -171,9 +177,9 @@ if __name__ == "__main__":
         print("\n모든 출석 체크 완료")
 
     except ConfigError as ex:
-        print(ex)
+        print("설정 파일 오류 :\n", ex)
     except WebDriverException:
-        print("크롬을 열 수 없습니다. 구글/카카오 로그인을 사용하면 열려있는 크롬 창을 전부 닫고 실행해 주세요.")
+        print("크롬 에러가 발생했습니다. 구글/카카오 로그인을 사용하면 열려있는 크롬 창을 전부 닫고 실행해 주세요.")
         print(traceback.format_exc())
     except yaml.YAMLError as ex:
         # from https://stackoverflow.com/questions/30269723/how-to-get-details-from-pyyaml-exception
