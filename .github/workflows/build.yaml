@@ -24,7 +24,7 @@ jobs:
         shell: bash
       - name: Build onefile
         run: |
-          pyinstaller --onefile onadaily.py
+          pyinstaller --onefile onadaily.py --hidden-import webdriverwrapper
           cp onadaily.yaml dist/
           pip-licenses > dist/depend-licenses.txt
           cp LICENSE dist/LICENSE.txt
@@ -33,7 +33,7 @@ jobs:
         shell: powershell
       - name: Build
         run: |
-          pyinstaller onadaily.py
+          pyinstaller onadaily.py --hidden-import webdriverwrapper
           cp onadaily.yaml dist/onadaily/
           pip-licenses > dist/onadaily/depend-licenses.txt
           cp LICENSE dist/onadaily/LICENSE.txt
