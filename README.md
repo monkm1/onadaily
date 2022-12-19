@@ -19,6 +19,7 @@ common:
   entertoquit: true # true 이면, 종료할 때 enter 키를 눌러야 합니다.
   waittime: 5 # 웹 페이지가 로딩될때까지의 대기 시간(초)입니다. 이 시간이 지나면 오류로 처리됩니다.
   showhotdeal: false # true 이면, 할인 정보를 출력합니다.
+  headless: false # true 이면, 크롬 창을 숨기고 동작합니다. 구글/카카오 로그인과 같이 사용할 수 없습니다.
 onami:
   enable: true
   login: default
@@ -46,6 +47,7 @@ common:
   entertoquit: true # true 이면, 종료할 때 enter 키를 눌러야 합니다.
   waittime: 5 # 웹 페이지가 로딩될때까지의 대기 시간(초)입니다. 이 시간이 지나면 오류로 처리됩니다.
   showhotdeal: false # true 이면, 할인 정보를 출력합니다.
+  headless: false # true 이면, 크롬 창을 숨기고 동작합니다. 구글/카카오 로그인과 같이 사용할 수 없습니다.
 onami:
   enable: true
   login: kakao # 카카오 로그인 사용
@@ -64,6 +66,7 @@ common:
   entertoquit: true
   waittime: 5
   showhotdeal: false
+  headless: false
 
 onami:
   enable: true

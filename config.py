@@ -28,7 +28,14 @@ def check_yaml_valid():
     default_section = {"enable": False, "login": "default", "id": None, "password": None}
     edited = False
 
-    default_common = {"datadir": None, "profile": None, "entertoquit": None, "waittime": 5, "showhotdeal": False}
+    default_common = {
+        "datadir": None,
+        "profile": None,
+        "entertoquit": None,
+        "waittime": 5,
+        "showhotdeal": False,
+        "headless": False,
+    }
 
     if "common" not in settings:
         settings["common"] = {}
@@ -47,6 +54,8 @@ def check_yaml_valid():
         with open(consts.SETTING_FILE_NAME, "w") as f:
             yaml.dump(settings, f, sort_keys=False)
     if datadir_required():
+        if settings["common"]["headless"]:
+            raise ConfigError("구글/카카오 로그인과 headless 모드를 같이 사용할 수 없습니다.")
         if getoption("common", "datadir") is None or getoption("common", "profile") is None:
             raise ConfigError("구글/카카오 로그인을 사용하려면 설정 파일의 datadir, profile을 지정해 주세요.")
 
