@@ -20,6 +20,11 @@ common:
   waittime: 5 # 웹 페이지가 로딩될때까지의 대기 시간(초)입니다. 이 시간이 지나면 오류로 처리됩니다.
   showhotdeal: false # true 이면, 할인 정보를 출력합니다.
   headless: false # true 이면, 크롬 창을 숨기고 동작합니다. 구글/카카오 로그인과 같이 사용할 수 없습니다.
+  order: # 출석 체크 순서입니다.
+    - showdang
+    - dingdong
+    - banana
+    - onami
 onami:
   enable: true
   login: default
@@ -42,12 +47,17 @@ onami:
 #### 예시
 ```yaml
 common:
-  datadir: "%localappdata%\\Google\\Chrome\\User Data" # 크롬의 User Data 경로
-  profile: "default" # 기본 프로필이 아닌 다른 프로필을 사용해도 됩니다.
+  datadir: null # 일반 로그인'만' 사용한다면 이 부분은 입력하지 않아도 됩니다.
+  profile: null
   entertoquit: true # true 이면, 종료할 때 enter 키를 눌러야 합니다.
   waittime: 5 # 웹 페이지가 로딩될때까지의 대기 시간(초)입니다. 이 시간이 지나면 오류로 처리됩니다.
   showhotdeal: false # true 이면, 할인 정보를 출력합니다.
   headless: false # true 이면, 크롬 창을 숨기고 동작합니다. 구글/카카오 로그인과 같이 사용할 수 없습니다.
+  order: # 출석 체크 순서입니다.
+    - showdang
+    - dingdong
+    - banana
+    - onami
 onami:
   enable: true
   login: kakao # 카카오 로그인 사용
@@ -61,12 +71,17 @@ onami:
 #### 구글, 카카오, 일반 로그인 전부 사용하는 경우
 ```yaml
 common:
-  datadir: "%localappdata%\\Google\\Chrome\\User Data"
-  profile: "default"
-  entertoquit: true
-  waittime: 5
-  showhotdeal: false
-  headless: false
+  datadir: null # 일반 로그인'만' 사용한다면 이 부분은 입력하지 않아도 됩니다.
+  profile: null
+  entertoquit: true # true 이면, 종료할 때 enter 키를 눌러야 합니다.
+  waittime: 5 # 웹 페이지가 로딩될때까지의 대기 시간(초)입니다. 이 시간이 지나면 오류로 처리됩니다.
+  showhotdeal: false # true 이면, 할인 정보를 출력합니다.
+  headless: false # true 이면, 크롬 창을 숨기고 동작합니다. 구글/카카오 로그인과 같이 사용할 수 없습니다.
+  order: # 출석 체크 순서입니다.
+    - showdang
+    - dingdong
+    - banana
+    - onami
 
 onami:
   enable: true
@@ -82,6 +97,12 @@ showdang:
 
 banana:
   enable: true
+  login: facebook
+  id: null
+  password: null
+
+dingdong:
+  enable: false
   login: kakao
   id: null
   password: null

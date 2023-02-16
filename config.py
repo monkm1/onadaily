@@ -1,4 +1,5 @@
 import sys
+from typing import Any, Dict
 
 import yaml
 
@@ -6,10 +7,10 @@ import consts
 from classes import ConfigError
 
 FILE_LOADED = False
-settings = {}
+settings: Dict[str, Any] = {}
 
 
-def getoption(site: int, option: str):
+def getoption(site, option):
     section = "common"
     if site != "common":
         section = consts.SITE_NAMES[site]
@@ -35,6 +36,7 @@ def check_yaml_valid():
         "waittime": 5,
         "showhotdeal": False,
         "headless": False,
+        "order": ["showdang", "dingdong", "banana", "onami"],
     }
 
     if "common" not in settings:
@@ -66,6 +68,15 @@ def check_yaml_valid():
                 raise ConfigError(f"설정 파일의 {consts.SITE_NAMES[site]} 아이디와 패스워드를 지정해 주세요.")
             if consts.LOGIN[login][site] is None:
                 raise ConfigError(f"{consts.SITE_NAMES[site]}의 {login} 로그인은 지원하지 않습니다.")
+
+    order = settings["common"]["order"]
+
+    if len(set(order)) != len(consts.SITES):
+        raise ConfigError("설정 파일의 order 항목에 중복되거나 누락된 사이트가 있습니다.")
+
+    for s in order:
+        if s not in consts.SITE_NAMES:
+            raise ConfigError("설정 파일의 order 항목에 사이트 철자가 틀렸습니다.")
 
 
 def load_settings():

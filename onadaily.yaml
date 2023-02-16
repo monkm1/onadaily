@@ -4,12 +4,18 @@ common:
   entertoquit: true # true 이면, 종료할 때 enter 키를 눌러야 합니다.
   waittime: 5 # 웹 페이지가 로딩될때까지의 대기 시간(초)입니다. 이 시간이 지나면 오류로 처리됩니다.
   showhotdeal: false # true 이면, 할인 정보를 출력합니다.
+  headless: false # true 이면, 크롬 창을 숨기고 동작합니다. 구글/카카오 로그인과 같이 사용할 수 없습니다.
+  order: # 출석 체크 순서입니다.
+    - showdang
+    - dingdong
+    - banana
+    - onami
 
-# Write id and password if login is 'default'.
-
+# 'login'이 'default' 라면 'id'와 'password'를 입력하세요.
+# login 항목 : default, google, kakao, naver, facebook, twitter (사이트마다 지원 로그인 상이)
 onami:
   enable: false
-  login: default # default, google, kakao
+  login: default
   id: null
   password: null
 

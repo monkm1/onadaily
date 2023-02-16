@@ -1,4 +1,6 @@
 # consts
+from typing import Any, Dict
+
 SETTING_FILE_NAME = "onadaily.yaml"
 ONAMI = 0
 SHOWDANG = 1
@@ -6,6 +8,7 @@ BANANA = 2
 DINGDONG = 3
 SITES = [ONAMI, SHOWDANG, BANANA, DINGDONG]
 SITE_NAMES = ["onami", "showdang", "banana", "dingdong"]
+SITE_DICTS = {"onami": 0, "showdang": 1, "banana": 2, "dingdong": 3}
 URLS = [
     "https://oname.kr/index.html",
     "https://showdang.kr/",
@@ -51,7 +54,7 @@ BTN_GOOGLE_LOGIN = [
     "//a [contains(@onclick, 'MemberAction') and contains(@onclick,'googleplus')]/img",
 ]
 BTN_KAKAO_LOGIN = [
-    "//a [contains(@onclick, 'MemberAction') and contains(@onclick,'kakaosyncLogin')]",
+    None,
     "//a [contains(@onclick, 'snsLogin') and contains(@onclick,'kakao')]",
     "//a[contains(@href, 'kakao_login')]/img",
     "//a [contains(@onclick, 'MemberAction') and contains(@onclick,'kakaosyncLogin')]/img",
@@ -70,7 +73,7 @@ BTN_FACEBOOK_LOGIN = [
 ]
 BTN_TWITTER_LOGIN = [None, None, "//a[contains(@href, 'twitter_login')]/img", None]
 
-LOGIN = {
+LOGIN: Dict[str, Any] = {
     "default": BTN_LOGIN,
     "google": BTN_GOOGLE_LOGIN,
     "kakao": BTN_KAKAO_LOGIN,
@@ -84,4 +87,9 @@ BTN_STAMP = [
     "//a[contains(@href, 'attendance_check')]",
     "//a[contains(@onclick, 'attend_send')]",
 ]
-HOTDEAL_TABLE = [".ms-wrap", "#todaysale", None, ".ms-wrap"]
+HOTDEAL_TABLE = [
+    ".ms-wrap",
+    "#todaysale",
+    None,
+    "xans-product-listmain",
+]

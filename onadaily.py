@@ -50,8 +50,8 @@ if __name__ == "__main__":
 
     def printhotdealinfo(page_source: str, site: int):
         soup = BeautifulSoup(page_source, "html.parser")
-        soup = soup.select_one(consts.HOTDEAL_TABLE[site])
-        products_all = soup.find_all("div")
+        soup = soup.select_one(consts.HOTDEAL_TABLE[site]).select_one("div")
+        products_all = soup.find_all("div", recursive=False)
         products = []
         for p in products_all:
             if p.has_attr("data-swiper-slide-index") and "swiper-slide-duplicate" not in p["class"]:
@@ -67,22 +67,6 @@ if __name__ == "__main__":
                     price = productsoup.find("span", "or-price").text
                     dc_price = productsoup.find("span", "sl-price").text
                     name = productsoup.find("ul", "swiper-prd-info-name").text
-
-                elif site == consts.DINGDONG:
-                    pricesoup = productsoup.find("ul", "xans-element-").find_all("li")
-                    reward = ""
-                    for p in pricesoup:
-                        if p.text.strip().startswith("회원가"):
-                            price = p.find("span", recursive=False).text
-                        elif p.text.strip().startswith("반짝할인"):
-                            dc_price = p.find("span", recursive=False).text
-                        elif p.text.strip().startswith("적립금"):
-                            reward = p.find("span", recursive=False).text
-
-                    if dc_price == "이게 보이면 오류":
-                        dc_price = "(적립금)" + reward
-
-                    name = productsoup.find("p", "name").find(text=True, recursive=False)
 
                 products.append(HotdealInfo(name, price, dc_price))
 
@@ -138,7 +122,7 @@ if __name__ == "__main__":
         login(driver, site)
         print("로그인 성공")
 
-        if getoption("common", "showhotdeal") and site != consts.BANANA:
+        if getoption("common", "showhotdeal") and site != consts.BANANA and site != consts.DINGDONG:
             printhotdealinfo(driver.page_source, site)
 
         driver.get(consts.STAMP_URLS[site])
@@ -177,9 +161,12 @@ if __name__ == "__main__":
     try:
         load_settings()
         driver = Webdriverwrapper(get_chrome_options())
+        order = getoption("common", "order")
+        order = [consts.SITE_DICTS[x] for x in order]
 
-        for site in consts.SITES:
+        for site in order:
             check(driver, site)
+
         print("\n모든 출석 체크 완료")
 
     except ConfigError as ex:
@@ -187,24 +174,9 @@ if __name__ == "__main__":
     except WebDriverException:
         print("크롬 에러가 발생했습니다. 구글/카카오 로그인을 사용하면 열려있는 크롬 창을 전부 닫고 실행해 주세요.")
         print(traceback.format_exc())
-    except yaml.YAMLError as ex:
-        # from https://stackoverflow.com/questions/30269723/how-to-get-details-from-pyyaml-exception
+    except yaml.YAMLError:
         print("설정 파일 분석 중 오류 발생:")
-        if hasattr(ex, "problem_mark"):
-            if ex.context is not None:
-                print(
-                    "  parser says\n"
-                    + str(ex.problem_mark)
-                    + "\n  "
-                    + str(ex.problem)
-                    + " "
-                    + str(ex.context)
-                    + "\n수정 후 다시 실행해 주세요."
-                )
-            else:
-                print("  parser says\n" + str(ex.problem_mark) + "\n  " + str(ex.problem) + "\n수정 후 다시 실행해 주세요.")
-        else:
-            print("설정 파일 로딩에 알 수 없는 오류가 발생했습니다.")
+        print(traceback.format_exc())
     except Exception:
         print(traceback.format_exc())
         if config.FILE_LOADED:
