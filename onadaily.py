@@ -157,37 +157,64 @@ if __name__ == "__main__":
     # #########
     # main
     # #########
-
+    passed = [False] * len(consts.SITE_NAMES)
+    autoretry = True
+    retrytime = 0
     try:
         load_settings()
-        driver = Webdriverwrapper(get_chrome_options())
-        order = getoption("common", "order")
-        order = [consts.SITE_DICTS[x] for x in order]
-
-        for site in order:
-            check(driver, site)
-
-        print("\n모든 출석 체크 완료")
-
     except ConfigError as ex:
         print("설정 파일 오류 :\n", ex)
-    except WebDriverException:
-        print("크롬 에러가 발생했습니다. 구글/카카오 로그인을 사용하면 열려있는 크롬 창을 전부 닫고 실행해 주세요.")
-        print(traceback.format_exc())
+        autoretry = False
     except yaml.YAMLError:
         print("설정 파일 분석 중 오류 발생:")
         print(traceback.format_exc())
-    except Exception:
-        print(traceback.format_exc())
-        if config.FILE_LOADED:
-            printsiteconfig(driver, site)
-    finally:
+        autoretry = False
+
+    while autoretry and not all(passed):
         try:
+            retrytime += 1
+            autoretry = getoption("common", "autoretry")
+            order = getoption("common", "order")
+            order_site_code = [consts.SITE_DICTS[x] for x in order]
+
+            if retrytime > getoption("common", "retrytime"):
+                print(f"재시도 {retrytime-1}번 실패")
+
+                failedsites = []
+                for i in range(len(order)):
+                    if passed[i]:
+                        continue
+                    failedsites.append(consts.SITE_NAMES[i])
+                print(f"실패한 사이트 : {failedsites}")
+                autoretry = False
+                break
+
+            driver = Webdriverwrapper(get_chrome_options())
+            for site in order_site_code:
+                if passed[site]:
+                    continue
+                check(driver, site)
+                passed[site] = True
+
             driver.quit()
-        except NameError:
-            pass
+
+            if all(passed):
+                print("\n모든 출석 체크 완료")
+
+        except WebDriverException:
+            print("크롬 에러가 발생했습니다. 구글/카카오 로그인을 사용하면 열려있는 크롬 창을 전부 닫고 실행해 주세요.")
+            print(traceback.format_exc())
         except Exception:
             print(traceback.format_exc())
+            if config.FILE_LOADED:
+                printsiteconfig(driver, site)
+        finally:
+            try:
+                driver.quit()
+            except NameError:
+                pass
+            except Exception:
+                print(traceback.format_exc())
 
     if config.entertoquit():
         input("종료하려면 Enter를 누르세요...")

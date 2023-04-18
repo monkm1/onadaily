@@ -14,6 +14,7 @@ class Webdriverwrapper(webdriver.Chrome):
         service = ChromeService(ChromeDriverManager().install())
         super().__init__(service=service, options=options)
         self.wait = WebDriverWait(self, getoption("common", "waittime"))
+        self._quited = False
 
     def wait_for(self, xpath):
         return self.wait.until(EC.presence_of_element_located((By.XPATH, xpath)))
@@ -33,3 +34,8 @@ class Webdriverwrapper(webdriver.Chrome):
 
     def wait_for_alert(self):
         self.wait.until(EC.alert_is_present())
+
+    def quit(self):
+        if not self._quited:
+            super().quit()
+            self._quited = True

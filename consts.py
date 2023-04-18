@@ -44,7 +44,7 @@ BTN_LOGIN = [
     "//a[contains(@onclick, 'login')]",
     "//a[contains(@onclick, 'login')]",
     "//input[contains(@onclick, 'loginch')]",
-    "//a[contains(@onclick, 'login')]/img",
+    "//a[contains(@onclick, 'login')]",
 ]
 
 BTN_GOOGLE_LOGIN = [

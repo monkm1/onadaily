@@ -32,11 +32,13 @@ def check_yaml_valid():
     default_common = {
         "datadir": None,
         "profile": None,
-        "entertoquit": None,
+        "entertoquit": True,
         "waittime": 5,
         "showhotdeal": False,
         "headless": False,
         "order": ["showdang", "dingdong", "banana", "onami"],
+        "autoretry": True,
+        "retrytime": 3,
     }
 
     if "common" not in settings:

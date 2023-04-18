@@ -25,6 +25,8 @@ common:
     - dingdong
     - banana
     - onami
+  autoretry: true # true 이면 실패 시 자동으로 재시도합니다.
+  retrytime: 3 # autoretry가 true 일 떄 재시도하는 최대 횟수입니다.
 onami:
   enable: true
   login: default
@@ -58,6 +60,8 @@ common:
     - dingdong
     - banana
     - onami
+  autoretry: true # true 이면 실패 시 자동으로 재시도합니다.
+  retrytime: 3 # autoretry가 true 일 떄 재시도하는 최대 횟수입니다.
 onami:
   enable: true
   login: kakao # 카카오 로그인 사용
@@ -82,6 +86,8 @@ common:
     - dingdong
     - banana
     - onami
+  autoretry: true # true 이면 실패 시 자동으로 재시도합니다.
+  retrytime: 3 # autoretry가 true 일 떄 재시도하는 최대 횟수입니다.
 
 onami:
   enable: true
