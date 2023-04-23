@@ -6,14 +6,14 @@ from selenium.webdriver.support import expected_conditions as EC  # noqa
 from selenium.webdriver.support.ui import WebDriverWait
 from webdriver_manager.chrome import ChromeDriverManager
 
-from config import getoption
+from config import options
 
 
 class Webdriverwrapper(webdriver.Chrome):
-    def __init__(self, options):
+    def __init__(self, chromeoptions):
         service = ChromeService(ChromeDriverManager().install())
-        super().__init__(service=service, options=options)
-        self.wait = WebDriverWait(self, getoption("common", "waittime"))
+        super().__init__(service=service, options=chromeoptions)
+        self.wait = WebDriverWait(self, options.common.waittime)
         self._quited = False
 
     def wait_for(self, xpath):

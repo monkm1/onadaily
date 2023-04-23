@@ -12,7 +12,7 @@ from selenium.webdriver.common.by import By
 import config
 import consts
 from classes import ConfigError, HotdealInfo
-from config import datadir_required, getoption, load_settings
+from config import options
 from webdriverwrapper import Webdriverwrapper
 
 if __name__ == "__main__":
@@ -43,9 +43,9 @@ if __name__ == "__main__":
 
     def printsiteconfig(driver: Webdriverwrapper, site: int) -> None:
         print(f"site : {site}/{consts.SITE_NAMES[site]}")
-        print(f"enable : {getoption(site, 'enable')}")
-        print(f"login : {getoption(site, 'login')}")
-        print(f"datadir required : {datadir_required()}")
+        print(f"enable : {options.sites[site].enable}")
+        print(f"login : {options.sites[site].login}")
+        print(f"datadir required : {options.datadir_required()}")
         print(f"current url : {driver.current_url}")
 
     def printhotdealinfo(page_source: str, site: int):
@@ -81,12 +81,12 @@ if __name__ == "__main__":
                 driver.get(consts.LOGIN_URLS[site])
 
             loginxpath = ""
-            loginoption = getoption(site, "login")
+            loginoption = options.sites[site].login
             if loginoption == "default":
                 idform = driver.wait_move_click(consts.INPUT_ID[site])
-                idform.send_keys(getoption(site, "id"))
+                idform.send_keys(options.sites[site].login)
                 pwdform = driver.wait_move_click(consts.INPUT_PWD[site])
-                pwdform.send_keys(getoption(site, "password"))  # write id and password
+                pwdform.send_keys(options.sites[site].password)  # write id and password
 
                 loginxpath = consts.LOGIN["default"][site]
             else:
@@ -114,7 +114,7 @@ if __name__ == "__main__":
     def check(driver: Webdriverwrapper, site: int):
         print(f"== {consts.SITE_NAMES[site]} ==")
 
-        if getoption(site, "enable") is False:
+        if not options.sites[site].enable:
             print("skip")
             return None
 
@@ -122,7 +122,7 @@ if __name__ == "__main__":
         login(driver, site)
         print("로그인 성공")
 
-        if getoption("common", "showhotdeal") and site != consts.BANANA and site != consts.DINGDONG:
+        if options.common.showhotdeal and site != consts.BANANA and site != consts.DINGDONG:
             printhotdealinfo(driver.page_source, site)
 
         driver.get(consts.STAMP_URLS[site])
@@ -133,26 +133,26 @@ if __name__ == "__main__":
         print()
 
     def get_chrome_options():
-        options = Options()
+        chromeoptions = Options()
         user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/103.0.0.0 Safari/537.36"  # noqa
-        options.add_argument("user-agent=" + user_agent)
-        options.add_argument("--disable-extensions")
-        options.add_argument("--log-level=3")
+        chromeoptions.add_argument("user-agent=" + user_agent)
+        chromeoptions.add_argument("--disable-extensions")
+        chromeoptions.add_argument("--log-level=3")
 
-        if getoption("common", "headless"):
-            options.add_argument("--disable-gpu")
-            options.add_argument("--headless")
-            options.add_argument("--window-size=1920,1080")
-            options.add_argument("--no-sandbox")
-            options.add_argument("--start-maximized")
-            options.add_argument("--disable-setuid-sandbox")
-        if datadir_required():
-            datadir = getoption("common", "datadir")
+        if options.common.headless:
+            chromeoptions.add_argument("--disable-gpu")
+            chromeoptions.add_argument("--headless")
+            chromeoptions.add_argument("--window-size=1920,1080")
+            chromeoptions.add_argument("--no-sandbox")
+            chromeoptions.add_argument("--start-maximized")
+            chromeoptions.add_argument("--disable-setuid-sandbox")
+        if options.datadir_required():
+            datadir = options.common.datadir
             datadir = path.expandvars(datadir)
-            options.add_argument(f"--user-data-dir={datadir}")
-            options.add_argument(f"--profile-directory={getoption('common', 'profile')}")
+            chromeoptions.add_argument(f"--user-data-dir={datadir}")
+            chromeoptions.add_argument(f"--profile-directory={options.common.profile}")
 
-        return options
+        return chromeoptions
 
     # #########
     # main
@@ -161,7 +161,7 @@ if __name__ == "__main__":
     autoretry = True
     retrytime = 0
     try:
-        load_settings()
+        options.load_settings()
     except ConfigError as ex:
         print("설정 파일 오류 :\n", ex)
         autoretry = False
@@ -173,11 +173,11 @@ if __name__ == "__main__":
     while autoretry and not all(passed):
         try:
             retrytime += 1
-            autoretry = getoption("common", "autoretry")
-            order = getoption("common", "order")
+            autoretry = options.common.autoretry
+            order = options.common.order
             order_site_code = [consts.SITE_DICTS[x] for x in order]
 
-            if retrytime > getoption("common", "retrytime"):
+            if retrytime > options.common.retrytime:
                 print(f"재시도 {retrytime-1}번 실패")
 
                 failedsites = []
@@ -206,7 +206,7 @@ if __name__ == "__main__":
             print(traceback.format_exc())
         except Exception:
             print(traceback.format_exc())
-            if config.FILE_LOADED:
+            if config._FILE_LOADED:
                 printsiteconfig(driver, site)
         finally:
             try:
@@ -216,5 +216,5 @@ if __name__ == "__main__":
             except Exception:
                 print(traceback.format_exc())
 
-    if config.entertoquit():
+    if options.common.entertoquit:
         input("종료하려면 Enter를 누르세요...")
