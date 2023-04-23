@@ -202,7 +202,7 @@ if __name__ == "__main__":
                 print("\n모든 출석 체크 완료")
 
         except WebDriverException:
-            print("크롬 에러가 발생했습니다. 구글/카카오 로그인을 사용하면 열려있는 크롬 창을 전부 닫고 실행해 주세요.")
+            print("크롬 에러가 발생했습니다. 소셜 로그인을 사용하면 열려있는 크롬 창을 전부 닫고 실행해 주세요.")
             print(traceback.format_exc())
         except Exception:
             print(traceback.format_exc())

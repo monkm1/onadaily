@@ -85,9 +85,9 @@ class _Options(object):
                 yaml.dump(_settings, f, sort_keys=False)
         if self.datadir_required():
             if _settings["common"]["headless"]:
-                raise ConfigError("구글/카카오 로그인과 headless 모드를 같이 사용할 수 없습니다.")
+                raise ConfigError("소셜 로그인과 headless 모드를 같이 사용할 수 없습니다.")
             if _getoption("common", "datadir") is None or _getoption("common", "profile") is None:
-                raise ConfigError("구글/카카오 로그인을 사용하려면 설정 파일의 datadir, profile을 지정해 주세요.")
+                raise ConfigError("소셜 로그인을 사용하려면 설정 파일의 datadir, profile을 지정해 주세요.")
 
         for site in consts.SITES:
             if _getoption(site, "enable") is True:
