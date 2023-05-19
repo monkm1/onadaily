@@ -10,6 +10,7 @@
 ### 일반 로그인 사용자
 * 각 사이트 별로 자동 출첵을 사용하려면 *enable*을 *true*로 바꿉니다.
 * 소셜 로그인을 사용하지 않으면 *login*은 *default*로 놔두고, *id*와 *password*를 입력합니다.
+* __아이디와 비밀번호를 "(쌍따옴표)로 감싸 입력하세요.__
 
 #### 예시
 ```yaml
@@ -30,8 +31,8 @@ common:
 onami:
   enable: true
   login: default
-  id: thisisnotrealid # 여기에 id
-  password: 1q2w3e4r! # 여기에 패스워드를 입력하세요.
+  id: "thisisnotrealid" # 여기에 id
+  password: "1q2w3e4r!" # 여기에 패스워드를 입력하세요.
 
 ...
 ```
@@ -92,8 +93,8 @@ common:
 onami:
   enable: true
   login: default
-  id: thisisnotrealid
-  password: 1q2w3e4r!
+  id: "thisisnotrealid"
+  password: "1q2w3e4r!"
 
 showdang:
   enable: true
