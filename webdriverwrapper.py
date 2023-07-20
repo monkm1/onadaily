@@ -1,18 +1,15 @@
 from selenium import webdriver
-from selenium.webdriver.chrome.service import Service as ChromeService
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC  # noqa
 from selenium.webdriver.support.ui import WebDriverWait
-from webdriver_manager.chrome import ChromeDriverManager
 
 from config import options
 
 
 class Webdriverwrapper(webdriver.Chrome):
     def __init__(self, chromeoptions):
-        service = ChromeService(ChromeDriverManager().install())
-        super().__init__(service=service, options=chromeoptions)
+        super().__init__(options=chromeoptions)
         self.wait = WebDriverWait(self, options.common.waittime)
         self._quited = False
 
