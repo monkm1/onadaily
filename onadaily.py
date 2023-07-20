@@ -84,7 +84,7 @@ if __name__ == "__main__":
             loginoption = options.sites[site].login
             if loginoption == "default":
                 idform = driver.wait_move_click(consts.INPUT_ID[site])
-                idform.send_keys(options.sites[site].login)
+                idform.send_keys(options.sites[site].id)
                 pwdform = driver.wait_move_click(consts.INPUT_PWD[site])
                 pwdform.send_keys(options.sites[site].password)  # write id and password
 
