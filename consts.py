@@ -8,7 +8,6 @@ BANANA = 2
 DINGDONG = 3
 SITES = [ONAMI, SHOWDANG, BANANA, DINGDONG]
 SITE_NAMES = ["onami", "showdang", "banana", "dingdong"]
-SITE_DICTS = {"onami": 0, "showdang": 1, "banana": 2, "dingdong": 3}
 URLS = [
     "https://oname.kr/index.html",
     "https://showdang.kr/",
@@ -87,7 +86,7 @@ BTN_STAMP = [
     "//a[contains(@href, 'attendance_check')]",
     "//a[contains(@onclick, 'attend_send')]",
 ]
-HOTDEAL_TABLE = [
+HOTDEAL_TABLE: list[str | None] = [
     ".ms-wrap",
     "#todaysale",
     None,

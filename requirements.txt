@@ -1,4 +1,4 @@
 PyYAML==6.0
-selenium==4.10.0
+selenium==4.11.2
 beautifulsoup4==4.11.1
 prettytable==3.5.0

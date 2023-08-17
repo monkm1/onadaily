@@ -12,7 +12,7 @@ from selenium.webdriver.common.by import By
 import config
 import consts
 from classes import ConfigError, HotdealInfo
-from config import options
+from config import Site, options
 from webdriverwrapper import Webdriverwrapper
 
 if __name__ == "__main__":
@@ -20,20 +20,20 @@ if __name__ == "__main__":
     def remove_query(url) -> str:
         return urlunsplit(urlsplit(url)._replace(query="", fragment=""))
 
-    def waitlogin(driver: Webdriverwrapper, site: int):
-        chkxpath = consts.CHK_LOGIN[site]
+    def waitlogin(driver: Webdriverwrapper, site: Site):
+        chkxpath = site.login_check_xpath
         driver.wait_for(chkxpath)
 
-    def chklogined(driver: Webdriverwrapper, site: int) -> bool:
-        chkxpath = consts.CHK_LOGIN[site]
+    def chklogined(driver: Webdriverwrapper, site: Site) -> bool:
+        chkxpath = site.login_check_xpath
         ele = driver.find_xpath(chkxpath)
         if ele:
             return True
         return False
 
-    def chkloginurl(driver: Webdriverwrapper, site: int) -> bool:
-        if site != consts.BANANA:
-            if remove_query(driver.current_url) != consts.LOGIN_URLS[site]:
+    def chkloginurl(driver: Webdriverwrapper, site: Site) -> bool:
+        if site.name != "banana":
+            if remove_query(driver.current_url) != site.login_url:
                 return False
             return True
         else:
@@ -41,16 +41,16 @@ if __name__ == "__main__":
                 return True
             return False
 
-    def printsiteconfig(driver: Webdriverwrapper, site: int) -> None:
-        print(f"site : {site}/{consts.SITE_NAMES[site]}")
-        print(f"enable : {options.sites[site].enable}")
-        print(f"login : {options.sites[site].login}")
+    def printsiteconfig(driver: Webdriverwrapper, site: Site) -> None:
+        print(f"site : {site}/{site.name}")
+        print(f"enable : {site.enable}")
+        print(f"login : {site.login}")
         print(f"datadir required : {options.datadir_required()}")
         print(f"current url : {driver.current_url}")
 
-    def printhotdealinfo(page_source: str, site: int):
+    def printhotdealinfo(page_source: str, site: Site):
         soup = BeautifulSoup(page_source, "html.parser")
-        soup = soup.select_one(consts.HOTDEAL_TABLE[site]).select_one("div")
+        soup = soup.select_one(site.hotdeal_table).select_one("div")  # type: ignore
         products_all = soup.find_all("div", recursive=False)
         products = []
         for p in products_all:
@@ -58,12 +58,12 @@ if __name__ == "__main__":
                 productsoup = list(p.children)[1]
 
                 price = dc_price = name = "이게 보이면 오류"
-                if site == consts.ONAMI:
+                if site.name == "onami":
                     dc_price = productsoup.find("p", "price").find("span").text
                     price = productsoup.find("strike").text
                     name = productsoup.find("p", "name").text
 
-                elif site == consts.SHOWDANG:
+                elif site.name == "showdang":
                     price = productsoup.find("span", "or-price").text
                     dc_price = productsoup.find("span", "sl-price").text
                     name = productsoup.find("ul", "swiper-prd-info-name").text
@@ -75,34 +75,29 @@ if __name__ == "__main__":
         table.add_rows([x.to_row() for x in products])
         print(table)
 
-    def login(driver: Webdriverwrapper, site: int):
+    def login(driver: Webdriverwrapper, site: Site):
         if not chklogined(driver, site):
-            if site != consts.BANANA:
-                driver.get(consts.LOGIN_URLS[site])
+            if site.name != "banana":
+                driver.get(site.login_url)
 
-            loginxpath = ""
-            loginoption = options.sites[site].login
-            if loginoption == "default":
-                idform = driver.wait_move_click(consts.INPUT_ID[site])
-                idform.send_keys(options.sites[site].id)
-                pwdform = driver.wait_move_click(consts.INPUT_PWD[site])
-                pwdform.send_keys(options.sites[site].password)  # write id and password
+            if site.login == "default":
+                idform = driver.wait_move_click(site.input_id)
+                idform.send_keys(site.id)
+                pwdform = driver.wait_move_click(site.input_pwd)
+                pwdform.send_keys(site.password)  # write id and password
 
-                loginxpath = consts.LOGIN["default"][site]
-            else:
-                loginxpath = consts.LOGIN[loginoption][site]
-            driver.wait_move_click(loginxpath)
+            driver.wait_move_click(site.btn_login)
 
             waitlogin(driver, site)
 
-    def stamp(driver: Webdriverwrapper, site: int) -> bool:
+    def stamp(driver: Webdriverwrapper, site: Site) -> bool:
         try:
-            driver.wait_move_click(consts.BTN_STAMP[site])
+            driver.wait_move_click(site.btn_stamp)
 
             driver.wait_for_alert()
             alert = driver.switch_to.alert
 
-            if site == consts.BANANA and alert.text == "잠시후 다시 시도해 주세요." or alert.text == "이미 출석체크를 하셨습니다.":
+            if site.name == "banana" and alert.text == "잠시후 다시 시도해 주세요." or alert.text == "이미 출석체크를 하셨습니다.":
                 alert.accept()
                 raise TimeoutException()
 
@@ -111,21 +106,21 @@ if __name__ == "__main__":
         except TimeoutException:
             return False
 
-    def check(driver: Webdriverwrapper, site: int):
-        print(f"== {consts.SITE_NAMES[site]} ==")
+    def check(driver: Webdriverwrapper, site: Site) -> None:
+        print(f"== {site.name} ==")
 
-        if not options.sites[site].enable:
+        if not site.enable:
             print("skip")
             return None
 
-        driver.get(consts.URLS[site])
+        driver.get(site.main_url)
         login(driver, site)
         print("로그인 성공")
 
-        if options.common.showhotdeal and site != consts.BANANA and site != consts.DINGDONG:
+        if options.common.showhotdeal and site.name != "banana" and site.name != "dingdong":
             printhotdealinfo(driver.page_source, site)
 
-        driver.get(consts.STAMP_URLS[site])
+        driver.get(site.stamp_url)
         if stamp(driver, site):
             print("출석 체크 성공")
         else:
@@ -157,7 +152,7 @@ if __name__ == "__main__":
     # #########
     # main
     # #########
-    passed = [False] * len(consts.SITE_NAMES)
+    passed = [False] * len(options.sites)
     autoretry = True
     retrytime = 0
     try:
@@ -175,7 +170,6 @@ if __name__ == "__main__":
             retrytime += 1
             autoretry = options.common.autoretry
             order = options.common.order
-            order_site_code = [consts.SITE_DICTS[x] for x in order]
 
             if retrytime > options.common.retrytime:
                 print(f"재시도 {retrytime-1}번 실패")
@@ -190,11 +184,12 @@ if __name__ == "__main__":
                 break
 
             driver = Webdriverwrapper(get_chrome_options())
-            for site in order_site_code:
-                if passed[site]:
+            for sitename in order:
+                site = options.getsite(sitename)
+                if passed[site.code]:
                     continue
                 check(driver, site)
-                passed[site] = True
+                passed[site.code] = True
 
             driver.quit()
 

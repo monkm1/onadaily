@@ -10,20 +10,20 @@ _FILE_LOADED = False
 _settings: Dict[str, Any] = {}
 
 
-def _getoption(site, option):
+def _getoption(sitename: str, option: str):
     section = "common"
-    if site != "common":
-        section = consts.SITE_NAMES[site]
+    if sitename != "common":
+        section = sitename
     return _settings[section][option]
 
 
 class _Options(object):
     def __init__(self) -> None:
         self.common = _Common()
-        self.sites: list[_Site] = []
+        self.sites: list[Site] = []
 
-        for site in consts.SITES:
-            self.sites.append(_Site(site))
+        for sitecode in consts.SITES:
+            self.sites.append(Site(sitecode))
 
     def load_settings(self):
         if len(sys.argv) > 1 and sys.argv[1] == "test":  # test mode
@@ -38,11 +38,14 @@ class _Options(object):
         global _FILE_LOADED
         _FILE_LOADED = True
 
+    def getsite(self, sitename) -> "Site":
+        return [x for x in self.sites if x.name == sitename][0]
+
     def datadir_required(self) -> bool:
         checklist = []
-        for site in consts.SITES:
-            if _getoption(site, "enable") is True:
-                checklist.append(_getoption(site, "login") != "default")
+        for site in self.sites:
+            if site.enable is True:
+                checklist.append(site.login != "default")
         return any(checklist)
 
     def _check_yaml_valid(self):
@@ -62,10 +65,9 @@ class _Options(object):
         }
 
         common_type_hint = get_type_hints(_Common)
-        site_type_hint = get_type_hints(_Site)
 
-        if len(common_type_hint) != len(default_common) or len(site_type_hint) != len(default_section):
-            raise ValueError("타입 힌트 혹은 default 옵션 수정해야 함")
+        if len(common_type_hint) != len(default_common):
+            raise ValueError("타입 힌트 수정해야 함")
 
         if "common" not in _settings:
             _settings["common"] = {}
@@ -89,13 +91,13 @@ class _Options(object):
             if _getoption("common", "datadir") is None or _getoption("common", "profile") is None:
                 raise ConfigError("소셜 로그인을 사용하려면 설정 파일의 datadir, profile을 지정해 주세요.")
 
-        for site in consts.SITES:
-            if _getoption(site, "enable") is True:
-                login = _getoption(site, "login")
-                if login == "default" and (_getoption(site, "id") is None or _getoption(site, "password") is None):
+        for site in self.sites:
+            if site.enable is True:
+                login = site.login
+                if login == "default" and (site.id is None or site.password is None):
                     raise ConfigError(f"설정 파일의 {consts.SITE_NAMES[site]} 아이디와 패스워드를 지정해 주세요.")
-                if consts.LOGIN[login][site] is None:
-                    raise ConfigError(f"{consts.SITE_NAMES[site]}의 {login} 로그인은 지원하지 않습니다.")
+                if site.btn_login is None:
+                    raise ConfigError(f"{site.name}의 {login} 로그인은 지원하지 않습니다.")
 
         order = _settings["common"]["order"]
 
@@ -137,17 +139,33 @@ class _Common(object):
         return _getoption("common", "entertoquit")
 
 
-class _Site(object):
+class Site(object):
+    name: str
     enable: bool
     login: str
     id: Optional[str]
     password: Optional[str]
 
     def __init__(self, site: int):
-        self._site = site
+        self.code = site
+        self.name = consts.SITE_NAMES[site]
+        self.main_url = consts.URLS[site]
+        self.stamp_url = consts.STAMP_URLS[site]
+        self.login_url = consts.LOGIN_URLS[site]
+
+        self.input_id = consts.INPUT_ID[site]
+        self.input_pwd = consts.INPUT_PWD[site]
+        self.login_check_xpath = consts.CHK_LOGIN[site]
+
+        self.btn_stamp = consts.BTN_STAMP[site]
+        self.hotdeal_table = consts.HOTDEAL_TABLE[site]  # type: ignore
+
+    @property
+    def btn_login(self):
+        return consts.LOGIN[self.login][self.code]
 
     def __getattr__(self, __name: str) -> Any:
-        return _getoption(self._site, __name)
+        return _getoption(self.name, __name)
 
 
 options = _Options()
