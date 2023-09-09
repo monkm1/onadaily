@@ -29,6 +29,8 @@ common:
     - onami
   autoretry: true # true 이면 실패 시 자동으로 재시도합니다.
   retrytime: 3 # autoretry가 true 일 때 재시도하는 최대 횟수입니다.
+  keywordnoti: [] # 특정 단어가 할인에 포함되어 있을때 알립니다. showhotdeal이 true 일때만 동작합니다. ex) keywordnoti: ["로션", "메이드"]
+
 onami:
   enable: true
   login: default
@@ -64,6 +66,8 @@ common:
     - onami
   autoretry: true # true 이면 실패 시 자동으로 재시도합니다.
   retrytime: 3 # autoretry가 true 일 때 재시도하는 최대 횟수입니다.
+  keywordnoti: [] # 특정 단어가 할인에 포함되어 있을때 알립니다. showhotdeal이 true 일때만 동작합니다. ex) keywordnoti: ["로션", "메이드"]
+
 onami:
   enable: true
   login: kakao # 카카오 로그인 사용
@@ -90,6 +94,8 @@ common:
     - onami
   autoretry: true # true 이면 실패 시 자동으로 재시도합니다.
   retrytime: 3 # autoretry가 true 일 때 재시도하는 최대 횟수입니다.
+  keywordnoti: [] # 특정 단어가 할인에 포함되어 있을때 알립니다. showhotdeal이 true 일때만 동작합니다. ex) keywordnoti: ["로션", "메이드"]
+
 
 onami:
   enable: true

@@ -67,6 +67,7 @@ class _Options(object):
             "order": ["showdang", "dingdong", "banana", "onami"],
             "autoretry": True,
             "retrytime": 3,
+            "keywordnoti": [],
         }
 
         common_type_hint = get_type_hints(_Common)
@@ -129,6 +130,7 @@ class _Common(object):
     order: list[str]
     autoretry: bool
     retrytime: int
+    keywordnoti: list[str]
 
     def __getattr__(self, key):
         if key == "entertoquit":

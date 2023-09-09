@@ -13,9 +13,12 @@ import config
 import consts
 from classes import ConfigError, HotdealInfo
 from config import Site, options
+from saletable import SaleTable
 from webdriverwrapper import Webdriverwrapper
 
 if __name__ == "__main__":
+    keywordnoti = PrettyTable()
+    keywordnoti.field_names = ["사이트", "품명", "정상가", "할인가"]
 
     def remove_query(url) -> str:
         return urlunsplit(urlsplit(url)._replace(query="", fragment=""))
@@ -70,10 +73,11 @@ if __name__ == "__main__":
 
                 products.append(HotdealInfo(name, price, dc_price))
 
-        table = PrettyTable()
+        table = SaleTable(site)
         table.field_names = ["품명", "정상가", "할인가"]
         table.add_rows([x.to_row() for x in products])
         print(table)
+        return table
 
     def login(driver: Webdriverwrapper, site: Site):
         if not chklogined(driver, site):
@@ -118,7 +122,13 @@ if __name__ == "__main__":
         print("로그인 성공")
 
         if options.common.showhotdeal and site.name != "banana" and site.name != "dingdong":
-            printhotdealinfo(driver.page_source, site)
+            table = printhotdealinfo(driver.page_source, site)
+
+            if len(options.common.keywordnoti) > 0:
+                keywordproducts = table.keywordcheck(options.common.keywordnoti)
+                if len(keywordproducts) > 0:
+                    global keywordnoti
+                    keywordnoti.add_rows(keywordproducts)
 
         driver.get(site.stamp_url)
         if stamp(driver, site):
@@ -195,6 +205,12 @@ if __name__ == "__main__":
 
             if all(passed):
                 print("\n모든 출석 체크 완료")
+                if len(options.common.keywordnoti) > 0:
+                    print("======키워드 알림======")
+                    if len(keywordnoti.rows) > 0:
+                        print(keywordnoti)
+                    else:
+                        print("키워드 알림 없음")
 
         except WebDriverException:
             print("크롬 에러가 발생했습니다. 소셜 로그인을 사용하면 열려있는 크롬 창을 전부 닫고 실행해 주세요.")
