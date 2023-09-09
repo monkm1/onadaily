@@ -1,4 +1,6 @@
+import shutil
 import sys
+from os import path
 from typing import Any, Dict, Optional, get_type_hints
 
 import yaml
@@ -28,6 +30,9 @@ class _Options(object):
     def load_settings(self):
         if len(sys.argv) > 1 and sys.argv[1] == "test":  # test mode
             consts.SETTING_FILE_NAME = "test.yaml"  # noqa
+
+        if not path.isfile(consts.SETTING_FILE_NAME):
+            shutil.copy("onadailyorigin.yaml", consts.SETTING_FILE_NAME)
 
         with open(consts.SETTING_FILE_NAME, "r", encoding="utf-8") as f:  # load yaml
             global _settings

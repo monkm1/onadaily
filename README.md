@@ -5,6 +5,7 @@
 [다운로드](https://github.com/monkm1/onadaily/releases/latest)
 
 ## Usage
+프로그램을 1회 실행합니다. 설정 파일이 생성됩니다.
 설정 파일(**onadaily.yaml**)을 메모장으로 엽니다.
 
 ### 일반 로그인 사용자

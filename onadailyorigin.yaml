@@ -1,0 +1,40 @@
+common:
+  datadir: null # 일반 로그인'만' 사용한다면 이 부분은 입력하지 않아도 됩니다.
+  profile: null
+  entertoquit: true # true 이면, 종료할 때 enter 키를 눌러야 합니다.
+  waittime: 5 # 웹 페이지가 로딩될때까지의 대기 시간(초)입니다. 이 시간이 지나면 오류로 처리됩니다.
+  showhotdeal: false # true 이면, 할인 정보를 출력합니다.
+  headless: false # true 이면, 크롬 창을 숨기고 동작합니다. 소셜 로그인과 같이 사용할 수 없습니다.
+  order: # 출석 체크 순서입니다.
+    - showdang
+    - dingdong
+    - banana
+    - onami
+  autoretry: true # true 이면 실패 시 자동으로 재시도합니다.
+  retrytime: 3 # autoretry가 true 일 때 재시도하는 최대 횟수입니다.
+
+# 'login'이 'default' 라면 'id'와 'password'를 입력하세요.
+# login 항목 : default, google, kakao, naver, facebook, twitter (사이트마다 지원 로그인 상이)
+onami:
+  enable: false
+  login: default
+  id: null
+  password: null
+
+showdang:
+  enable: false
+  login: default
+  id: null
+  password: null
+
+banana:
+  enable: false
+  login: default
+  id: null
+  password: null
+
+dingdong:
+  enable: false
+  login: default
+  id: null
+  password: null
