@@ -4,11 +4,11 @@ from config import Site
 
 
 class SaleTable(prettytable.PrettyTable):
-    def __init__(self, site: Site):
+    def __init__(self, site: Site) -> None:
         self.site = site
         super().__init__()
 
-    def keywordcheck(self, keywords):
+    def keywordcheck(self, keywords) -> list:
         result = []
         for x in self.rows:
             for keyword in keywords:

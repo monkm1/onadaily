@@ -7,7 +7,7 @@ class HotdealInfo(object):
     price: str
     dc_price: str
 
-    def __init__(self, name: str, price: str, dc_price: str):
+    def __init__(self, name: str, price: str, dc_price: str) -> None:
         self.name = name.strip()
         price = price.strip()
         dc_price = dc_price.strip()

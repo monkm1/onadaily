@@ -92,3 +92,10 @@ HOTDEAL_TABLE: list[str | None] = [
     None,
     "xans-product-listmain",
 ]
+
+STAMP_CALENDAR: list[str] = [
+    "table[class^=xans-element-]>tbody",
+    "table[class^=xans-element-]>tbody",
+    "table.calendar>tbody",
+    "table[class^=xans-element-]>tbody",
+]

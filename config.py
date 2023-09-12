@@ -43,6 +43,11 @@ class _Options(object):
         global _FILE_LOADED
         _FILE_LOADED = True
 
+        order = _getoption("common", "order")
+        self.common._order = []
+        for sitename in order:
+            self.common._order.append(self.getsite(sitename))
+
     def getsite(self, sitename) -> "Site":
         return [x for x in self.sites if x.name == sitename][0]
 
@@ -72,7 +77,7 @@ class _Options(object):
 
         common_type_hint = get_type_hints(_Common)
 
-        if len(common_type_hint) != len(default_common):
+        if len(common_type_hint) + 1 != len(default_common):
             raise ValueError("타입 힌트 수정해야 함")
 
         if "common" not in _settings:
@@ -127,15 +132,23 @@ class _Common(object):
     waittime: int
     showhotdeal: bool
     headless: bool
-    order: list[str]
     autoretry: bool
     retrytime: int
     keywordnoti: list[str]
+
+    def __init__(self) -> None:
+        self._order: Optional[list["Site"]] = None
 
     def __getattr__(self, key):
         if key == "entertoquit":
             return self._entertoquit()
         return _getoption("common", key)
+
+    @property
+    def order(self) -> list["Site"]:
+        if self._order is None:
+            raise ValueError()
+        return self._order
 
     def _entertoquit(self) -> bool:
         if not _FILE_LOADED:
@@ -153,22 +166,23 @@ class Site(object):
     id: Optional[str]
     password: Optional[str]
 
-    def __init__(self, site: int):
-        self.code = site
-        self.name = consts.SITE_NAMES[site]
-        self.main_url = consts.URLS[site]
-        self.stamp_url = consts.STAMP_URLS[site]
-        self.login_url = consts.LOGIN_URLS[site]
+    def __init__(self, sitecode: int) -> None:
+        self.code = sitecode
+        self.name = consts.SITE_NAMES[sitecode]
+        self.main_url = consts.URLS[sitecode]
+        self.stamp_url = consts.STAMP_URLS[sitecode]
+        self.login_url = consts.LOGIN_URLS[sitecode]
 
-        self.input_id = consts.INPUT_ID[site]
-        self.input_pwd = consts.INPUT_PWD[site]
-        self.login_check_xpath = consts.CHK_LOGIN[site]
+        self.input_id = consts.INPUT_ID[sitecode]
+        self.input_pwd = consts.INPUT_PWD[sitecode]
+        self.login_check_xpath = consts.CHK_LOGIN[sitecode]
 
-        self.btn_stamp = consts.BTN_STAMP[site]
-        self.hotdeal_table = consts.HOTDEAL_TABLE[site]  # type: ignore
+        self.btn_stamp = consts.BTN_STAMP[sitecode]
+        self.hotdeal_table = consts.HOTDEAL_TABLE[sitecode]  # type: ignore
+        self.stamp_calendar = consts.STAMP_CALENDAR[sitecode]
 
     @property
-    def btn_login(self):
+    def btn_login(self) -> str:
         return consts.LOGIN[self.login][self.code]
 
     def __getattr__(self, __name: str) -> Any:

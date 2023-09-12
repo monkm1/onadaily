@@ -1,143 +1,189 @@
 import traceback
+import typing
+from datetime import datetime
+from math import ceil
 from os import path
-from urllib.parse import urlsplit, urlunsplit
 
-import yaml
+import pytz
 from bs4 import BeautifulSoup
 from prettytable import PrettyTable
-from selenium.common.exceptions import TimeoutException, WebDriverException
+from selenium.common import TimeoutException, WebDriverException
 from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.common.by import By
 
 import config
-import consts
-from classes import ConfigError, HotdealInfo
 from config import Site, options
-from saletable import SaleTable
 from webdriverwrapper import Webdriverwrapper
 
-if __name__ == "__main__":
-    keywordnoti = PrettyTable()
-    keywordnoti.field_names = ["사이트", "품명", "정상가", "할인가"]
 
-    def remove_query(url) -> str:
-        return urlunsplit(urlsplit(url)._replace(query="", fragment=""))
+class StampResult(object):
+    def __init__(self, site: Site):
+        self.site = site
+        self.passed = False
+        self.error = False
+        self.message = ""
 
-    def waitlogin(driver: Webdriverwrapper, site: Site):
-        chkxpath = site.login_check_xpath
-        driver.wait_for(chkxpath)
+    def __bool__(self) -> bool:
+        return self.passed
 
-    def chklogined(driver: Webdriverwrapper, site: Site) -> bool:
-        chkxpath = site.login_check_xpath
-        ele = driver.find_xpath(chkxpath)
-        if ele:
-            return True
-        return False
 
-    def chkloginurl(driver: Webdriverwrapper, site: Site) -> bool:
-        if site.name != "banana":
-            if remove_query(driver.current_url) != site.login_url:
-                return False
-            return True
-        else:
-            if driver.find_elements(By.XPATH, "//div[text() = '회원 로그인']"):
-                return True
-            return False
+class Onadaily(object):
+    def __init__(self) -> None:
+        self.passed: dict[Site, StampResult] = {}
 
-    def printsiteconfig(driver: Webdriverwrapper, site: Site) -> None:
-        print(f"site : {site}/{site.name}")
-        print(f"enable : {site.enable}")
-        print(f"login : {site.login}")
-        print(f"datadir required : {options.datadir_required()}")
-        print(f"current url : {driver.current_url}")
+        for site in options.sites:
+            self.passed[site] = StampResult(site)
 
-    def printhotdealinfo(page_source: str, site: Site):
-        soup = BeautifulSoup(page_source, "html.parser")
-        soup = soup.select_one(site.hotdeal_table).select_one("div")  # type: ignore
-        products_all = soup.find_all("div", recursive=False)
-        products = []
-        for p in products_all:
-            if p.has_attr("data-swiper-slide-index") and "swiper-slide-duplicate" not in p["class"]:
-                productsoup = list(p.children)[1]
+        self.autoretry = True
+        self.retrytime = 0
+        self.keywordnoti = PrettyTable()
+        self.keywordnoti.field_names = ["사이트", "품명", "정상가", "할인가"]
 
-                price = dc_price = name = "이게 보이면 오류"
-                if site.name == "onami":
-                    dc_price = productsoup.find("p", "price").find("span").text
-                    price = productsoup.find("strike").text
-                    name = productsoup.find("p", "name").text
+        options.load_settings()
 
-                elif site.name == "showdang":
-                    price = productsoup.find("span", "or-price").text
-                    dc_price = productsoup.find("span", "sl-price").text
-                    name = productsoup.find("ul", "swiper-prd-info-name").text
+    def run(self) -> None:
+        while self.autoretry and not all(self.passed.values()):
+            try:
+                self.retrytime += 1
+                self.autoretry = options.common.autoretry
+                order = options.common.order
 
-                products.append(HotdealInfo(name, price, dc_price))
+                if self.retrytime > options.common.retrytime:
+                    print(f"재시도 {self.retrytime-1}번 실패")
+                    failedsites = [result.site.name for result in self.passed.values() if not result.passed]
+                    print(f"실패한 사이트 : {failedsites}")
+                    self.autoretry = False
+                    break
 
-        table = SaleTable(site)
-        table.field_names = ["품명", "정상가", "할인가"]
-        table.add_rows([x.to_row() for x in products])
-        print(table)
-        return table
+                self.driver = Webdriverwrapper(self.get_chrome_options())
 
-    def login(driver: Webdriverwrapper, site: Site):
-        if not chklogined(driver, site):
+                for site in order:
+                    self._currentsite = site
+                    if self.passed[site]:
+                        continue
+
+                    self.passed[site] = self.check(site)
+
+                self.driver.quit()
+
+                if all(self.passed.values()):
+                    if len(options.common.keywordnoti) > 0:
+                        print("======키워드 알림======")
+                        if len(self.keywordnoti.rows) > 0:
+                            print(self.keywordnoti)
+                        else:
+                            print("키워드 알림 없음")
+
+            except WebDriverException:
+                print("크롬 에러가 발생했습니다. 소셜 로그인을 사용하면 열려있는 크롬 창을 전부 닫고 실행해 주세요.")
+                print(traceback.format_exc())
+            except Exception:
+                print(traceback.format_exc())
+                if config._FILE_LOADED:
+                    self.printsiteconfig(self._currentsite)
+            finally:
+                try:
+                    self.driver.quit()
+                except (NameError, AttributeError):
+                    pass
+                except Exception:
+                    print(traceback.format_exc())
+
+            print("======결과======")
+            for result in self.passed.values():
+                print(f"사이트 : {result.site.name} / {result.message}")
+
+    def check(self, site: Site) -> StampResult:
+        print(f"== {site.name} ==")
+        result = StampResult(site)
+
+        if not site.enable:
+            print("skip")
+            result.message = "스킵"
+            return result
+
+        self.driver.get(site.main_url)
+        self.login(site)
+        print("로그인 성공")
+
+        if options.common.showhotdeal and site.name != "banana" and site.name != "dingdong":
+            table = self.driver.gethotdealinfo(site)
+            print(table)
+
+            if len(options.common.keywordnoti) > 0:
+                keywordproducts = table.keywordcheck(options.common.keywordnoti)
+                if len(keywordproducts) > 0:
+                    self.keywordnoti.add_rows(keywordproducts)
+
+        self.driver.get(site.stamp_url)
+        result = self.stamp(site)
+
+        print(result.message)
+        return result
+
+    def login(self, site: Site) -> None:
+        if not self.driver.check_logined(site):
             if site.name != "banana":
-                driver.get(site.login_url)
+                self.driver.get(site.login_url)
 
             if site.login == "default":
-                idform = driver.wait_move_click(site.input_id)
+                idform = self.driver.wait_move_click(site.input_id)
                 idform.send_keys(site.id)
-                pwdform = driver.wait_move_click(site.input_pwd)
+                pwdform = self.driver.wait_move_click(site.input_pwd)
                 pwdform.send_keys(site.password)  # write id and password
 
-            driver.wait_move_click(site.btn_login)
+            self.driver.wait_move_click(site.btn_login)
 
-            waitlogin(driver, site)
+            self.driver.wait_login(site)
 
-    def stamp(driver: Webdriverwrapper, site: Site) -> bool:
+    def stamp(self, site: Site) -> StampResult:
         try:
-            driver.wait_move_click(site.btn_stamp)
+            result = StampResult(site)
+            if self.check_already_stamp(site, self.driver.page_source):
+                result.message = "이미 출첵함"
+                result.passed = True
+                return result
+            self.driver.wait_move_click(site.btn_stamp)
 
-            driver.wait_for_alert()
-            alert = driver.switch_to.alert
+            self.driver.wait_for_alert()
+            alert = self.driver.switch_to.alert
 
             if site.name == "banana" and alert.text == "잠시후 다시 시도해 주세요." or alert.text == "이미 출석체크를 하셨습니다.":
                 alert.accept()
                 raise TimeoutException()
 
             alert.accept()
-            return True
+            result.message = "출석 체크 성공"
+            result.passed = True
+            return result
         except TimeoutException:
-            return False
+            result.message = "출석 체크 버튼 찾지 못함"
+            return result
 
-    def check(driver: Webdriverwrapper, site: Site) -> None:
-        print(f"== {site.name} ==")
+    @typing.no_type_check
+    def check_already_stamp(self, site: Site, source: str) -> bool:
+        self.driver.wait_for_selector(site.stamp_calendar)
+        soup = BeautifulSoup(source, "html.parser")
+        tablesoup = soup.select_one(site.stamp_calendar)
 
-        if not site.enable:
-            print("skip")
-            return None
+        week, day = self.num_of_month_week()
 
-        driver.get(site.main_url)
-        login(driver, site)
-        print("로그인 성공")
+        weekssoup = tablesoup.find_all(True, recursive=False)
+        weeksoup = weekssoup[week - 1].find_all(True, recursive=False)
 
-        if options.common.showhotdeal and site.name != "banana" and site.name != "dingdong":
-            table = printhotdealinfo(driver.page_source, site)
+        todaysoup = weeksoup[day - 1]
 
-            if len(options.common.keywordnoti) > 0:
-                keywordproducts = table.keywordcheck(options.common.keywordnoti)
-                if len(keywordproducts) > 0:
-                    global keywordnoti
-                    keywordnoti.add_rows(keywordproducts)
-
-        driver.get(site.stamp_url)
-        if stamp(driver, site):
-            print("출석 체크 성공")
+        if site.name != "banana":
+            if todaysoup.find("img", {"alt": "출석"}) is None:
+                return False
+            else:
+                return True
         else:
-            print("출석체크 버튼을 찾을 수 없습니다. 이미 체크 했거나 오류입니다.")
-        print()
+            if todaysoup.find("img") is None:
+                return False
+            else:
+                return True
 
-    def get_chrome_options():
+    def get_chrome_options(self) -> Options:
         chromeoptions = Options()
         user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/103.0.0.0 Safari/537.36"  # noqa
         chromeoptions.add_argument("user-agent=" + user_agent)
@@ -153,79 +199,36 @@ if __name__ == "__main__":
             chromeoptions.add_argument("--disable-setuid-sandbox")
         if options.datadir_required():
             datadir = options.common.datadir
+            if datadir is None:
+                raise ValueError()
             datadir = path.expandvars(datadir)
             chromeoptions.add_argument(f"--user-data-dir={datadir}")
             chromeoptions.add_argument(f"--profile-directory={options.common.profile}")
 
         return chromeoptions
 
-    # #########
-    # main
-    # #########
-    passed = [False] * len(options.sites)
-    autoretry = True
-    retrytime = 0
-    try:
-        options.load_settings()
-    except ConfigError as ex:
-        print("설정 파일 오류 :\n", ex)
-        autoretry = False
-    except yaml.YAMLError:
-        print("설정 파일 분석 중 오류 발생:")
-        print(traceback.format_exc())
-        autoretry = False
+    def printsiteconfig(self, site: Site) -> None:
+        print(f"site : {site.code}/{site.name}")
+        print(f"enable : {site.enable}")
+        print(f"login : {site.login}")
+        print(f"datadir required : {options.datadir_required()}")
+        print(f"current url : {self.driver.current_url}")
 
-    while autoretry and not all(passed):
-        try:
-            retrytime += 1
-            autoretry = options.common.autoretry
-            order = options.common.order
+    def num_of_month_week(self) -> tuple[int, int]:
+        utcnow = pytz.utc.localize(datetime.utcnow())
+        date = utcnow.astimezone(pytz.timezone("Asia/Seoul"))
 
-            if retrytime > options.common.retrytime:
-                print(f"재시도 {retrytime-1}번 실패")
+        date = datetime.today()
+        first_day = date.replace(day=1)
 
-                failedsites = []
-                for i in range(len(order)):
-                    if passed[i]:
-                        continue
-                    failedsites.append(consts.SITE_NAMES[i])
-                print(f"실패한 사이트 : {failedsites}")
-                autoretry = False
-                break
+        day_of_month = date.day
 
-            driver = Webdriverwrapper(get_chrome_options())
-            for sitename in order:
-                site = options.getsite(sitename)
-                if passed[site.code]:
-                    continue
-                check(driver, site)
-                passed[site.code] = True
+        if first_day.weekday() == 6:
+            adjusted_dom = (1 + first_day.weekday()) / 7
+        else:
+            adjusted_dom = day_of_month + first_day.weekday()
 
-            driver.quit()
+        weeknum = int(ceil(adjusted_dom / 7.0))
+        dayofweeknum = (date.weekday() + 1) % 7 + 1
 
-            if all(passed):
-                print("\n모든 출석 체크 완료")
-                if len(options.common.keywordnoti) > 0:
-                    print("======키워드 알림======")
-                    if len(keywordnoti.rows) > 0:
-                        print(keywordnoti)
-                    else:
-                        print("키워드 알림 없음")
-
-        except WebDriverException:
-            print("크롬 에러가 발생했습니다. 소셜 로그인을 사용하면 열려있는 크롬 창을 전부 닫고 실행해 주세요.")
-            print(traceback.format_exc())
-        except Exception:
-            print(traceback.format_exc())
-            if config._FILE_LOADED:
-                printsiteconfig(driver, site)
-        finally:
-            try:
-                driver.quit()
-            except NameError:
-                pass
-            except Exception:
-                print(traceback.format_exc())
-
-    if options.common.entertoquit:
-        input("종료하려면 Enter를 누르세요...")
+        return weeknum, dayofweeknum
