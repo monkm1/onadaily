@@ -137,6 +137,7 @@ class Onadaily(object):
 
     def stamp(self, site: Site) -> StampResult:
         try:
+            self.driver.wait_for_selector(site.stamp_calendar)
             result = StampResult(site)
             if self.check_already_stamp(site, self.driver.page_source):
                 result.message = "이미 출첵함"
