@@ -38,8 +38,26 @@ jobs:
           pip-licenses > dist/onadaily/depend-licenses.txt
           cp LICENSE dist/onadaily/LICENSE.txt
           Compress-Archive .\dist\onadaily\* onadaily-windows.zip
+      - name: Release check
+        uses: actions-ecosystem/action-regex-match@2
+        id: regex
+        with:
+          text: ${{ github.ref }}
+          regex: 'refs\/tags\/v\d+\.\d+\.\d+pre\d+'
+
+      - name: Release pre-release
+        uses: softprops/action-gh-release@v1
+        if: ${{ steps.regex.outputs.match != '' }}
+        with:
+          body: "onadaily-windows-onefile.zip 은 하나로 압축시킨 파일입니다. 바이러스로 오진될 수 있습니다. 이 경우엔 onadaily-windows.zip을 사용하세요.\n이 버전은 베타 버전입니다. 오류가 발생할 수 있습니다."
+          files: |
+            onadaily-windows-onefile.zip
+            onadaily-windows.zip
+          prerelease: true
+      
       - name: Release
         uses: softprops/action-gh-release@v1
+        if: ${{ steps.regex.outputs.match == '' }}
         with:
           body: "onadaily-windows-onefile.zip 은 하나로 압축시킨 파일입니다. 바이러스로 오진될 수 있습니다. 이 경우엔 onadaily-windows.zip을 사용하세요."
           files: |
