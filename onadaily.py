@@ -225,9 +225,9 @@ class Onadaily(object):
         day_of_month = date.day
 
         if first_day.weekday() == 6:
-            adjusted_dom = (1 + first_day.weekday()) / 7
+            adjusted_dom = day_of_month + 1
         else:
-            adjusted_dom = day_of_month + first_day.weekday()
+            adjusted_dom = day_of_month + first_day.weekday() + 1
 
         weeknum = int(ceil(adjusted_dom / 7.0))
         dayofweeknum = (date.weekday() + 1) % 7 + 1
