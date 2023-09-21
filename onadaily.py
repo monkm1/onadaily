@@ -5,7 +5,7 @@ from selenium.common import TimeoutException, WebDriverException
 
 import config
 from config import Site, options
-from utils import check_already_stamp, get_chrome_options, gethotdealinfo
+from utils import ParseError, check_already_stamp, get_chrome_options, gethotdealinfo
 from webdriverwrapper import Webdriverwrapper
 
 
@@ -81,7 +81,6 @@ class Onadaily(object):
 
         def stamp(site: Site) -> StampResult:
             try:
-                self.driver.wait_for_selector(site.stamp_calendar)
                 result = StampResult(site)
 
                 self.driver.wait_for_selector(site.stamp_calendar)
@@ -94,9 +93,12 @@ class Onadaily(object):
                 self.driver.wait_for_alert()
                 alert = self.driver.switch_to.alert
 
-                if site.name == "banana" and alert.text == "잠시후 다시 시도해 주세요." or alert.text == "이미 출석체크를 하셨습니다.":
-                    alert.accept()
-                    raise TimeoutException()
+                if site.name == "banana":
+                    if alert.text == "잠시후 다시 시도해 주세요.":
+                        alert.accept()
+                        raise TimeoutException()
+                    elif alert.text == "이미 출석체크를 하셨습니다.":
+                        raise ParseError("달력 파싱 오류")
 
                 alert.accept()
                 result.message = "출석 체크 성공"
