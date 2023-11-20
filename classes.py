@@ -11,9 +11,9 @@ class HotdealInfo(object):
         self.name = name.strip()
         price = price.strip()
         dc_price = dc_price.strip()
-        if price[-1] != "원":
+        if price != "" and price[-1] != "원":
             price += "원"
-        if dc_price[-1] != "원":
+        if dc_price != "" and dc_price[-1] != "원":
             dc_price += "원"
         self.price = price
         self.dc_price = dc_price
