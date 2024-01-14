@@ -53,8 +53,8 @@ onami:
 #### 예시
 ```yaml
 common:
-  datadir: null # 일반 로그인'만' 사용한다면 이 부분은 입력하지 않아도 됩니다.
-  profile: null
+  datadir: '%localappdata%\Google\Chrome\User Data' # 크롬의 User Data 경로를 입력하세요. 예시는 기본 경로입니다.
+  profile: 'profile 0' # 사용하고자 하는 프로필 이름을 입력하세요. 예시는 기본 프로필입니다.
   entertoquit: true # true 이면, 종료할 때 enter 키를 눌러야 합니다.
   waittime: 5 # 웹 페이지가 로딩될때까지의 대기 시간(초)입니다. 이 시간이 지나면 오류로 처리됩니다.
   showhotdeal: false # true 이면, 할인 정보를 출력합니다.
