@@ -109,62 +109,58 @@ class Onadaily(object):
                 return result
 
         while self.autoretry and not all(self.passed.values()):
-            try:
-                self.retrytime += 1
-                self.autoretry = options.common.autoretry
-                order = options.common.order
+            self.retrytime += 1
+            self.autoretry = options.common.autoretry
+            order = options.common.order
 
-                if self.retrytime > options.common.retrytime:
-                    print(f"재시도 {self.retrytime-1}번 실패")
-                    failedsites = [result.site.name for result in self.passed.values() if not result.passed]
-                    print(f"실패한 사이트 : {failedsites}")
-                    self.autoretry = False
-                    break
+            if self.retrytime > options.common.retrytime:
+                print(f"재시도 {self.retrytime-1}번 실패")
+                failedsites = [result.site.name for result in self.passed.values() if not result.passed]
+                print(f"실패한 사이트 : {failedsites}")
+                self.autoretry = False
+                break
 
-                self.driver = Webdriverwrapper(
-                    get_chrome_options(
-                        options.datadir_required(),
-                        options.common.datadir,
-                        options.common.profile,
-                        options.common.headless,
-                    )
+            self.driver = Webdriverwrapper(
+                get_chrome_options(
+                    options.datadir_required(),
+                    options.common.datadir,
+                    options.common.profile,
+                    options.common.headless,
                 )
+            )
 
-                for site in order:
-                    self._currentsite = site
-                    if self.passed[site]:
-                        continue
+            for site in order:
+                self._currentsite = site
+                if self.passed[site]:
+                    continue
 
+                try:
                     self.passed[site] = check(site)
 
-                self.driver.quit()
-
-                if all(self.passed.values()):
-                    if len(options.common.keywordnoti) > 0:
-                        print("======키워드 알림======")
-                        if len(self.keywordnoti.rows) > 0:
-                            print(self.keywordnoti)
-                        else:
-                            print("키워드 알림 없음")
-
-            except WebDriverException:
-                print("크롬 에러가 발생했습니다. 소셜 로그인을 사용하면 열려있는 크롬 창을 전부 닫고 실행해 주세요.")
-                print(traceback.format_exc())
-            except Exception:
-                print(traceback.format_exc())
-                if config._FILE_LOADED:
-                    self.printsiteconfig(self._currentsite)
-            finally:
-                try:
-                    self.driver.quit()
-                except (NameError, AttributeError):
-                    pass
+                except WebDriverException:
+                    print("크롬 에러가 발생했습니다. 소셜 로그인을 사용하면 열려있는 크롬 창을 전부 닫고 실행해 주세요.")
+                    print(traceback.format_exc())
                 except Exception:
                     print(traceback.format_exc())
+                    if config._FILE_LOADED:
+                        self.printsiteconfig(self._currentsite)
 
-            print("======결과======")
-            for result in self.passed.values():
-                print(f"사이트 : {result.site.name} / {result.message}")
+            try:
+                self.driver.quit()
+            except Exception:
+                pass
+
+            if all(self.passed.values()):
+                if len(options.common.keywordnoti) > 0:
+                    print("======키워드 알림======")
+                    if len(self.keywordnoti.rows) > 0:
+                        print(self.keywordnoti)
+                    else:
+                        print("키워드 알림 없음")
+
+        print("======결과======")
+        for result in self.passed.values():
+            print(f"사이트 : {result.site.name} / {result.message}")
 
     def printsiteconfig(self, site: Site) -> None:
         print(f"site : {site.code}/{site.name}")
