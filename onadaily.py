@@ -13,7 +13,7 @@ class StampResult(object):
     def __init__(self, site: Site) -> None:
         self.site = site
         self.passed = False
-        self.error = False
+        self.iserror = False
         self.message = ""
 
     def __bool__(self) -> bool:
@@ -33,6 +33,16 @@ class Onadaily(object):
         self.keywordnoti.field_names = ["사이트", "품명", "정상가", "할인가"]
 
         options.load_settings()
+
+    def initdriver(self):
+        self.driver = Webdriverwrapper(
+            get_chrome_options(
+                options.datadir_required(),
+                options.common.datadir,
+                options.common.profile,
+                options.common.headless,
+            )
+        )
 
     def run(self) -> None:
         def check(site: Site) -> StampResult:
@@ -120,14 +130,7 @@ class Onadaily(object):
                 self.autoretry = False
                 break
 
-            self.driver = Webdriverwrapper(
-                get_chrome_options(
-                    options.datadir_required(),
-                    options.common.datadir,
-                    options.common.profile,
-                    options.common.headless,
-                )
-            )
+            self.initdriver()
 
             for site in order:
                 self._currentsite = site
@@ -138,17 +141,22 @@ class Onadaily(object):
                     self.passed[site] = check(site)
 
                 except WebDriverException:
+                    self.passed[site].iserror = True
                     print("크롬 에러가 발생했습니다. 소셜 로그인을 사용하면 열려있는 크롬 창을 전부 닫고 실행해 주세요.")
                     print(traceback.format_exc())
                 except Exception:
+                    self.passed[site].iserror = True
                     print(traceback.format_exc())
                     if config._FILE_LOADED:
                         self.printsiteconfig(self._currentsite)
+                finally:
+                    if self.passed[site].iserror:
+                        self.passed[site].message = "실패, 오류 출력 확인"
+                        if not all([y.passed for x, y in self.passed.items() if x != site]):  # 하나라도 수행안한 사이트가 있으면
+                            self.driver.quit()
+                            self.initdriver()
 
-            try:
-                self.driver.quit()
-            except Exception:
-                pass
+            self.driver.quit()
 
             if all(self.passed.values()):
                 if len(options.common.keywordnoti) > 0:

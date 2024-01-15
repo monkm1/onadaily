@@ -1,0 +1,24 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+pyyaml = "==6.0"
+selenium = "==4.11.2"
+beautifulsoup4 = "==4.11.1"
+prettytable = "==3.5.0"
+pytz = "*"
+mypy = "*"
+pip = "*"
+
+[dev-packages]
+mypy = "*"
+types-pyyaml = "*"
+types-pytz = "*"
+types-beautifulsoup4 = "*"
+flake8 = "*"
+pep8-naming = "*"
+
+[requires]
+python_version = "3.11"

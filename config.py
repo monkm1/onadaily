@@ -188,5 +188,20 @@ class Site(object):
     def __getattr__(self, __name: str) -> Any:
         return _getoption(self.name, __name)
 
+    def __eq__(self, __value: object) -> bool:
+        if not isinstance(__value, Site):
+            return False
+
+        if __value.id == self.id and __value.name == self.name:
+            return True
+        else:
+            return False
+
+    def __ne__(self, __value: object) -> bool:
+        return not self == __value
+
+    def __hash__(self):
+        return hash(self.name)
+
 
 options = _Options()
