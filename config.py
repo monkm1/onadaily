@@ -69,7 +69,7 @@ class _Options(object):
             "waittime": 5,
             "showhotdeal": False,
             "headless": False,
-            "order": ["showdang", "dingdong", "banana", "onami"],
+            "order": ["showdang", "dingdong", "banana", "onami", "domae"],
             "autoretry": True,
             "retrytime": 3,
             "keywordnoti": [],
@@ -91,6 +91,7 @@ class _Options(object):
         for site in consts.SITE_NAMES:
             if site not in _settings:
                 _settings[site] = default_section.copy()
+                _settings["common"]["order"].append(site)
                 edited = True
 
         if edited:
@@ -106,7 +107,7 @@ class _Options(object):
             if site.enable is True:
                 login = site.login
                 if login == "default" and (site.id is None or site.password is None):
-                    raise ConfigError(f"설정 파일의 {consts.SITE_NAMES[site]} 아이디와 패스워드를 지정해 주세요.")
+                    raise ConfigError(f"설정 파일의 {site.name} 아이디와 패스워드를 지정해 주세요.")
                 if site.btn_login is None:
                     raise ConfigError(f"{site.name}의 {login} 로그인은 지원하지 않습니다.")
 

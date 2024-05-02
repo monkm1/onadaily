@@ -59,7 +59,7 @@ class Onadaily(object):
             login(site)
             print("로그인 성공")
 
-            if options.common.showhotdeal and site.name != "banana" and site.name != "dingdong":
+            if options.common.showhotdeal and site.hotdeal_table is not None:  # 핫딜 테이블 불러오기
                 table = gethotdealinfo(self.driver.page_source, site)
                 print(table)
 
@@ -75,7 +75,7 @@ class Onadaily(object):
             return result
 
         def login(site: Site) -> None:
-            if not self.driver.check_logined(site):
+            if not self.driver.check_logined(site):  # 로그인 상태 체크(로그인 이미 되어있는 경우 있음)
                 if site.name != "banana":
                     self.driver.get(site.login_url)
 
@@ -142,7 +142,9 @@ class Onadaily(object):
 
                 except WebDriverException:
                     self.passed[site].iserror = True
-                    print("크롬 에러가 발생했습니다. 소셜 로그인을 사용하면 열려있는 크롬 창을 전부 닫고 실행해 주세요.")
+                    print(
+                        "크롬 에러가 발생했습니다. 소셜 로그인을 사용하면 열려있는 크롬 창을 전부 닫고 실행해 주세요."
+                    )
                     print(traceback.format_exc())
                 except Exception:
                     self.passed[site].iserror = True
@@ -152,7 +154,9 @@ class Onadaily(object):
                 finally:
                     if self.passed[site].iserror:
                         self.passed[site].message = "실패, 오류 출력 확인"
-                        if not all([y.passed for x, y in self.passed.items() if x != site]):  # 하나라도 수행안한 사이트가 있으면
+                        if not all(
+                            [y.passed for x, y in self.passed.items() if x != site]
+                        ):  # 하나라도 수행안한 사이트가 있으면
                             self.driver.quit()
                             self.initdriver()
 
