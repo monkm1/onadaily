@@ -5,7 +5,7 @@ from selenium.common import TimeoutException, WebDriverException
 
 import config
 from config import Site, options
-from utils import ParseError, check_already_stamp, get_chrome_options, gethotdealinfo
+from utils import ParseError, check_already_stamp, cleartextarea, get_chrome_options, gethotdealinfo
 from webdriverwrapper import Webdriverwrapper
 
 
@@ -81,8 +81,11 @@ class Onadaily(object):
 
                 if site.login == "default":
                     idform = self.driver.wait_move_click(site.input_id)
+                    cleartextarea(idform)
                     idform.send_keys(site.id)
+
                     pwdform = self.driver.wait_move_click(site.input_pwd)
+                    cleartextarea(pwdform)
                     pwdform.send_keys(site.password)  # write id and password
 
                 self.driver.wait_move_click(site.btn_login)

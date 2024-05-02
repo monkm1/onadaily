@@ -5,6 +5,8 @@ from os import path
 import pytz
 from bs4 import BeautifulSoup
 from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.remote.webelement import WebElement
 
 from classes import HotdealInfo
 from config import Site
@@ -13,6 +15,11 @@ from saletable import SaleTable
 
 class ParseError(Exception):
     pass
+
+
+def cleartextarea(element: WebElement) -> None:
+    element.send_keys(Keys.CONTROL + "a")
+    element.send_keys(Keys.DELETE)
 
 
 def check_already_stamp(site: Site, source: str) -> bool:
