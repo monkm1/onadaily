@@ -75,7 +75,7 @@ BTN_KAKAO_LOGIN = [
 ]
 BTN_NAVER_LOGIN = [
     None,
-    None,
+    "//a [contains(@onclick, 'snsLogin') and contains(@onclick,'naver')]",
     "//a[contains(@href, 'naver_login')]/img",
     "//a[contains(@onclick, 'MemberAction') and contains(@onclick,'naver')]/img",
     None,
