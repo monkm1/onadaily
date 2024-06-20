@@ -61,12 +61,13 @@ class Onadaily(object):
 
             if options.common.showhotdeal and site.hotdeal_table is not None:  # 핫딜 테이블 불러오기
                 table = gethotdealinfo(self.driver.page_source, site)
-                print(table)
+                if table is not None:
+                    print(table)
 
-                if len(options.common.keywordnoti) > 0:
-                    keywordproducts = table.keywordcheck(options.common.keywordnoti)
-                    if len(keywordproducts) > 0:
-                        self.keywordnoti.add_rows(keywordproducts)
+                    if len(options.common.keywordnoti) > 0:
+                        keywordproducts = table.keywordcheck(options.common.keywordnoti)
+                        if len(keywordproducts) > 0:
+                            self.keywordnoti.add_rows(keywordproducts)
 
             self.driver.get(site.stamp_url)
             result = stamp(site)

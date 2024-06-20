@@ -92,7 +92,14 @@ def get_chrome_options(reqdatadir=False, datadir="", profile="", headless=False)
 
 def gethotdealinfo(page_source: str, site: Site) -> SaleTable:
     soup = BeautifulSoup(page_source, "html.parser")
-    soup = soup.select_one(site.hotdeal_table).select_one("div")  # type: ignore
+    soup = soup.select_one(site.hotdeal_table)
+
+    if soup is None:
+        print("핫딜 테이블 찾을 수 없음")
+        return None
+
+    soup = soup.select_one("div")
+    # type: ignore
     products_all = soup.find_all("div", recursive=False)
     products = []
     for p in products_all:
