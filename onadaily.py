@@ -5,6 +5,7 @@ from selenium.common import TimeoutException, WebDriverException
 
 import config
 from config import Site, options
+from consts import BNA_LOGIN_WND_XPATH
 from utils import ParseError, check_already_stamp, cleartextarea, get_chrome_options, gethotdealinfo
 from webdriverwrapper import Webdriverwrapper
 
@@ -77,8 +78,14 @@ class Onadaily(object):
 
         def login(site: Site) -> None:
             if not self.driver.check_logined(site):  # 로그인 상태 체크(로그인 이미 되어있는 경우 있음)
+                current_window_handle = self.driver.current_window_handle
                 if site.name != "banana":
                     self.driver.get(site.login_url)
+                else:
+                    self.driver.wait_move_click(BNA_LOGIN_WND_XPATH)
+
+                    another_window = list(set(self.driver.window_handles) - {self.driver.current_window_handle})[0]
+                    self.driver.switch_to.window(another_window)
 
                 if site.login == "default":
                     idform = self.driver.wait_move_click(site.input_id)
@@ -90,6 +97,9 @@ class Onadaily(object):
                     pwdform.send_keys(site.password)  # write id and password
 
                 self.driver.wait_move_click(site.btn_login)
+
+                if site.name == "banana":
+                    self.driver.switch_to.window(current_window_handle)
 
                 self.driver.wait_login(site)
 

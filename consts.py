@@ -33,14 +33,14 @@ LOGIN_URLS = [
 INPUT_ID = [
     '//*[@id="member_id"]',
     r'//*[@id="member_id"]',
-    r"//*[@id='id']",
+    r"//*[@name='id']",
     "//input[@id='member_id']",
     "//input[@id='member_id']",
 ]
 INPUT_PWD = [
     '//*[@id="member_passwd"]',
     r'//*[@id="member_passwd"]',
-    "//*[@id='passwd']",
+    "//*[@name='passwd']",
     "//input[@id='member_passwd']",
     "//input[@id='member_passwd']",
 ]
@@ -54,7 +54,7 @@ CHK_LOGIN = [
 BTN_LOGIN = [
     "//a[contains(@onclick, 'login')]",
     "//a[contains(@onclick, 'login')]",
-    "//input[contains(@onclick, 'loginch')]",
+    "//a[contains(@onclick, 'loginch')]",
     "//a[contains(@onclick, 'login')]",
     "//a[contains(@onclick, 'MemberAction.login')]",
 ]
@@ -62,21 +62,21 @@ BTN_LOGIN = [
 BTN_GOOGLE_LOGIN = [
     "//a [contains(@onclick, 'MemberAction') and contains(@onclick,'googleplus')]",
     "//a [contains(@onclick, 'snsLogin') and contains(@onclick,'google')]",
-    "//a[contains(@href, 'google_login')]/img",
+    "//a[contains(@onclick, 'google_login')]/img",
     "//a [contains(@onclick, 'MemberAction') and contains(@onclick,'googleplus')]/img",
     None,
 ]
 BTN_KAKAO_LOGIN = [
     None,
     "//a [contains(@onclick, 'snsLogin') and contains(@onclick,'kakao')]",
-    "//a[contains(@href, 'kakao_login')]/img",
+    None,
     "//a [contains(@onclick, 'MemberAction') and contains(@onclick,'kakaosyncLogin')]/img",
     None,
 ]
 BTN_NAVER_LOGIN = [
     None,
     "//a [contains(@onclick, 'snsLogin') and contains(@onclick,'naver')]",
-    "//a[contains(@href, 'naver_login')]/img",
+    "//a[contains(@onclick, 'naver_login')]/img",
     "//a[contains(@onclick, 'MemberAction') and contains(@onclick,'naver')]/img",
     None,
 ]
@@ -87,7 +87,7 @@ BTN_FACEBOOK_LOGIN = [
     "//a[contains(@onclick, 'MemberAction') and contains(@onclick,'facebook')]/img",
     None,
 ]
-BTN_TWITTER_LOGIN = [None, None, "//a[contains(@href, 'twitter_login')]/img", None, None]
+BTN_TWITTER_LOGIN = [None, None, "//a[contains(@onclick, 'twitter_login')]/img", None, None]
 
 LOGIN: Dict[str, Any] = {
     "default": BTN_LOGIN,
@@ -113,3 +113,5 @@ STAMP_CALENDAR: list[str] = [
     "table[class^=xans-element-]>tbody",
     "table[class^=xans-element-]>tbody",
 ]
+
+BNA_LOGIN_WND_XPATH = "//a[@title='로그인']"
