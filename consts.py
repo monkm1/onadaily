@@ -17,7 +17,7 @@ URLS = [
     "https://domaedoll.com/",
 ]
 STAMP_URLS = [
-    "https://oname.kr/attend/stamp.html",
+    "https://oname.kr/attend/stamp2.html",
     "https://showdang.kr/attend/stamp.html",
     "https://www.bananamall.co.kr/etc/attendance.php",
     "https://www.dingdong.co.kr/attend/stamp.html",
