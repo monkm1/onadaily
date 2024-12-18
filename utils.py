@@ -3,8 +3,8 @@ from math import ceil
 from os import path
 
 import pytz
+import undetected_chromedriver as uc
 from bs4 import BeautifulSoup
-from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.remote.webelement import WebElement
 
@@ -68,12 +68,11 @@ def num_of_month_week() -> tuple[int, int]:
     return weeknum, dayofweeknum
 
 
-def get_chrome_options(reqdatadir=False, datadir="", profile="", headless=False) -> Options:
-    chromeoptions = Options()
-    user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/103.0.0.0 Safari/537.36"  # noqa
-    chromeoptions.add_argument("user-agent=" + user_agent)
+def get_chrome_options(reqdatadir=False, datadir="", profile="", headless=False) -> uc.ChromeOptions:
+    chromeoptions = uc.ChromeOptions()
     chromeoptions.add_argument("--disable-extensions")
     chromeoptions.add_argument("--log-level=3")
+    chromeoptions.add_argument("--disable-popup-blocking")
 
     if headless:
         chromeoptions.add_argument("--disable-gpu")

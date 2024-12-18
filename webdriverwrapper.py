@@ -1,6 +1,6 @@
 from urllib.parse import urlsplit, urlunsplit
 
-from selenium import webdriver
+import undetected_chromedriver as uc
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.webelement import WebElement
@@ -10,7 +10,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from config import Site, options
 
 
-class Webdriverwrapper(webdriver.Chrome):
+class Webdriverwrapper(uc.Chrome):
     def __init__(self, chromeoptions) -> None:
         self._quited = True
         super().__init__(options=chromeoptions)

@@ -87,6 +87,9 @@ class Onadaily(object):
                     another_window = list(set(self.driver.window_handles) - {self.driver.current_window_handle})[0]
                     self.driver.switch_to.window(another_window)
 
+                    if self.driver.check_logined(site):
+                        return
+
                 if site.login == "default":
                     idform = self.driver.wait_move_click(site.input_id)
                     cleartextarea(idform)
