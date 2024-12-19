@@ -70,6 +70,8 @@ def num_of_month_week() -> tuple[int, int]:
 
 def get_chrome_options(reqdatadir=False, datadir="", profile="", headless=False) -> uc.ChromeOptions:
     chromeoptions = uc.ChromeOptions()
+    useragent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
+    chromeoptions.add_argument(f"--user-agent={useragent}")
     chromeoptions.add_argument("--disable-extensions")
     chromeoptions.add_argument("--log-level=3")
     chromeoptions.add_argument("--disable-popup-blocking")
