@@ -1,4 +1,5 @@
 import traceback
+from time import sleep
 
 from prettytable import PrettyTable
 from selenium.common import TimeoutException, WebDriverException
@@ -115,10 +116,14 @@ class Onadaily(object):
                     result.message = "이미 출첵함"
                     result.passed = True
                     return result
+                if site.name == "onami":
+                    sleep(1)
                 self.driver.wait_move_click(site.btn_stamp)
 
                 self.driver.wait_for_alert()
                 alert = self.driver.switch_to.alert
+
+                print(f"메시지 : {alert.text}")
 
                 if site.name == "banana":
                     if alert.text == "잠시후 다시 시도해 주세요.":
