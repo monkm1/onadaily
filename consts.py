@@ -11,21 +11,21 @@ SITES = [ONAMI, SHOWDANG, BANANA, DINGDONG, DOMAE]
 SITE_NAMES = ["onami", "showdang", "banana", "dingdong", "domae"]
 URLS = [
     "https://oname.kr/index.html",
-    "https://showdang.kr/",
+    "https://showdang.co.kr/",
     "https://www.bananamall.co.kr/",
     "https://www.dingdong.co.kr",
     "https://domaedoll.com/",
 ]
 STAMP_URLS = [
     "https://oname.kr/attend/stamp2.html",
-    "https://showdang.kr/attend/stamp.html",
+    "https://showdang.co.kr/event/attend_stamp.php",
     "https://www.bananamall.co.kr/etc/attendance.php",
     "https://www.dingdong.co.kr/attend/stamp.html",
     "https://domaedoll.com/attend/stamp.html",
 ]
 LOGIN_URLS = [
     "https://oname.kr/member/login.html",
-    "https://showdang.kr/member/login.html",
+    "https://showdang.co.kr/member/login.php",
     "https://www.bananamall.co.kr/",
     "https://dingdong.co.kr/member/login.html",
     "https://domaedoll.com/intro/adult_im.html",
@@ -46,10 +46,10 @@ INPUT_PWD = [
 ]
 CHK_LOGIN = [
     "//span[contains(@class, 'member-var-name') and string-length(text()) > 0]",
-    "//span[contains(@class, 'member-var-name') and string-length(text()) > 0]",
+    "//a[text()='LOGOUT']",
     "//a[@title='로그아웃']",
     "//a[text()='로그아웃']",
-    "//a[contains(@data-ez-item, 'logout')]",
+    "//a[contains(@class, 'top_basket')]",
 ]
 BTN_LOGIN = [
     "//a[contains(@onclick, 'login')]",
@@ -68,7 +68,7 @@ BTN_GOOGLE_LOGIN = [
 ]
 BTN_KAKAO_LOGIN = [
     None,
-    "//a [contains(@onclick, 'snsLogin') and contains(@onclick,'kakao')]",
+    "//a [contains(@class, 'btn_kakao_login')]",
     None,
     "//a [contains(@onclick, 'MemberAction') and contains(@onclick,'kakaosyncLogin')]/img",
     None,
@@ -99,7 +99,7 @@ LOGIN: Dict[str, Any] = {
 }
 BTN_STAMP = [
     "//a[contains(@onclick, 'attend_send')]/img",
-    "//a[contains(@onclick, 'attend_send')]",
+    "//button[contains(@class, 'btn_attend_check')]",
     "//a[contains(@href, 'attendance_check')]",
     "//a[contains(@onclick, 'attend_send')]",
     "//a[contains(@onclick, 'attend_send')]",
@@ -108,7 +108,7 @@ HOTDEAL_TABLE: list[str | None] = [".ms-wrap", "#todaysale", None, None, None]
 
 STAMP_CALENDAR: list[str] = [
     "table[class^=xans-element-]>tbody",
-    "table[class^=xans-element-]>tbody",
+    ".calendar_sec > table >tbody",
     "table.calendar>tbody",
     "table[class^=xans-element-]>tbody",
     "table[class^=xans-element-]>tbody",
