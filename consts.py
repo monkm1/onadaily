@@ -53,30 +53,30 @@ CHK_LOGIN = [
 ]
 BTN_LOGIN = [
     "//a[contains(@onclick, 'login')]",
-    "//a[contains(@onclick, 'login')]",
+    "//button[contains(@class, 'member_login')]",
     "//a[contains(@onclick, 'loginch')]",
     "//a[contains(@onclick, 'login')]",
     "//a[contains(@onclick, 'MemberAction.login')]",
 ]
 
 BTN_GOOGLE_LOGIN = [
-    "//a [contains(@onclick, 'MemberAction') and contains(@onclick,'googleplus')]",
-    "//a [contains(@onclick, 'snsLogin') and contains(@onclick,'google')]",
+    "//a[contains(@onclick, 'MemberAction') and contains(@onclick,'googleplus')]",
+    "//a[contains(@class,'js_btn_google_login')]",
     "//a[contains(@onclick, 'google_login')]/img",
-    "//a [contains(@onclick, 'MemberAction') and contains(@onclick,'googleplus')]/img",
+    "//a[contains(@onclick, 'MemberAction') and contains(@onclick,'googleplus')]/img",
     None,
 ]
 BTN_KAKAO_LOGIN = [
     None,
-    "//a [contains(@class, 'btn_kakao_login')]",
+    "//a[contains(@class, 'btn_kakao_login')]",
     None,
-    "//a [contains(@onclick, 'MemberAction') and contains(@onclick,'kakaosyncLogin')]/img",
+    "//a[contains(@onclick, 'MemberAction') and contains(@onclick,'kakaosyncLogin')]/img",
     None,
 ]
 BTN_NAVER_LOGIN = [
     None,
     "//a [contains(@onclick, 'snsLogin') and contains(@onclick,'naver')]",
-    "//a[contains(@onclick, 'naver_login')]/img",
+    "//a[contains(@class, 'js_btn_naver_login')]",
     "//a[contains(@onclick, 'MemberAction') and contains(@onclick,'naver')]/img",
     None,
 ]
