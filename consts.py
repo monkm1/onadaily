@@ -32,14 +32,14 @@ LOGIN_URLS = [
 ]
 INPUT_ID = [
     '//*[@id="member_id"]',
-    r'//*[@id="member_id"]',
+    r'//*[@id="loginId"]',
     r"//*[@name='id']",
     "//input[@id='member_id']",
     "//input[@id='member_id']",
 ]
 INPUT_PWD = [
     '//*[@id="member_passwd"]',
-    r'//*[@id="member_passwd"]',
+    r'//*[@id="loginPwd"]',
     "//*[@name='passwd']",
     "//input[@id='member_passwd']",
     "//input[@id='member_passwd']",
