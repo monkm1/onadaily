@@ -3,7 +3,7 @@ from math import ceil
 from os import path
 
 import pytz
-import undetected_chromedriver as uc
+import undetected_chromedriver as uc  # type: ignore
 from bs4 import BeautifulSoup
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.remote.webelement import WebElement
@@ -70,7 +70,7 @@ def num_of_month_week() -> tuple[int, int]:
 
 def get_chrome_options(reqdatadir=False, datadir="", profile="", headless=False) -> uc.ChromeOptions:
     chromeoptions = uc.ChromeOptions()
-    useragent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
+    useragent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"  # noqa
     chromeoptions.add_argument(f"--user-agent={useragent}")
     chromeoptions.add_argument("--disable-extensions")
     chromeoptions.add_argument("--log-level=3")
@@ -91,17 +91,20 @@ def get_chrome_options(reqdatadir=False, datadir="", profile="", headless=False)
     return chromeoptions
 
 
-def gethotdealinfo(page_source: str, site: Site) -> SaleTable:
+def gethotdealinfo(page_source: str, site: Site) -> SaleTable | None:
     soup = BeautifulSoup(page_source, "html.parser")
-    soup = soup.select_one(site.hotdeal_table)
 
-    if soup is None:
+    assert site.hotdeal_table is not None
+    table = soup.select_one(site.hotdeal_table)
+
+    if table is None:
         print("핫딜 테이블 찾을 수 없음")
         return None
 
-    soup = soup.select_one("div")
-    # type: ignore
-    products_all = soup.find_all("div", recursive=False)
+    div = table.select_one("div")
+
+    assert div is not None
+    products_all = div.find_all("div", recursive=False)
     products = []
     for p in products_all:
         if p.has_attr("data-swiper-slide-index") and "swiper-slide-duplicate" not in p["class"]:
@@ -120,7 +123,7 @@ def gethotdealinfo(page_source: str, site: Site) -> SaleTable:
 
             products.append(HotdealInfo(name, price, dc_price))
 
-    table = SaleTable(site)
-    table.field_names = ["품명", "정상가", "할인가"]
-    table.add_rows([x.to_row() for x in products])
-    return table
+    resulttable = SaleTable(site)
+    resulttable.field_names = ["품명", "정상가", "할인가"]
+    resulttable.add_rows([x.to_row() for x in products])
+    return resulttable

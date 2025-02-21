@@ -1,6 +1,6 @@
 from urllib.parse import urlsplit, urlunsplit
 
-import undetected_chromedriver as uc
+import undetected_chromedriver as uc  # type: ignore
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.webelement import WebElement
@@ -67,3 +67,13 @@ class Webdriverwrapper(uc.Chrome):
         if not self._quited:
             super().quit()
             self._quited = True
+
+    @property
+    def quited(self) -> bool:
+        return self._quited
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.quit()
