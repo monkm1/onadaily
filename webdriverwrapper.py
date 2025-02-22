@@ -1,3 +1,4 @@
+from typing import Self
 from urllib.parse import urlsplit, urlunsplit
 
 import undetected_chromedriver as uc  # type: ignore
@@ -11,13 +12,13 @@ from config import Site, options
 
 
 class Webdriverwrapper(uc.Chrome):
-    def __init__(self, chromeoptions) -> None:
+    def __init__(self, chromeoptions: uc.ChromeOptions) -> None:
         self._quited = True
         super().__init__(options=chromeoptions)
         self.wait = WebDriverWait(self, options.common.waittime)
         self._quited = False
 
-    def wait_for(self, xpath) -> WebElement:
+    def wait_for(self, xpath: str) -> WebElement:
         return self.wait.until(EC.presence_of_element_located((By.XPATH, xpath)))
 
     def wait_for_selector(self, selector: str) -> WebElement:
@@ -51,13 +52,13 @@ class Webdriverwrapper(uc.Chrome):
         action = ActionChains(self)
         action.move_to_element(element).perform()
 
-    def wait_move_click(self, xpath) -> WebElement:
+    def wait_move_click(self, xpath: str) -> WebElement:
         element = self.wait_for(xpath)
         self.move_to(element)
         self.execute_script("arguments[0].click()", element)
         return element
 
-    def find_xpath(self, xpath) -> list[WebElement]:
+    def find_xpath(self, xpath: str) -> list[WebElement]:
         return self.find_elements(By.XPATH, xpath)
 
     def wait_for_alert(self) -> None:
@@ -72,8 +73,8 @@ class Webdriverwrapper(uc.Chrome):
     def quited(self) -> bool:
         return self._quited
 
-    def __enter__(self):
+    def __enter__(self) -> Self:
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def __exit__(self, exc_type, exc_val, exc_tb) -> None:
         self.quit()

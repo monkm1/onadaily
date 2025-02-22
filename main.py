@@ -1,5 +1,4 @@
 import logging
-import traceback
 
 from yaml import YAMLError
 

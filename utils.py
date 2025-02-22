@@ -49,10 +49,7 @@ def check_already_stamp(site: Site, source: str) -> bool:
 
 
 def num_of_month_week() -> tuple[int, int]:
-    utcnow = pytz.utc.localize(datetime.utcnow())
-    date = utcnow.astimezone(pytz.timezone("Asia/Seoul"))
-
-    date = datetime.today()
+    date = datetime.now(pytz.timezone("Asia/Seoul"))
     first_day = date.replace(day=1)
 
     day_of_month = date.day
@@ -94,7 +91,8 @@ def get_chrome_options(reqdatadir=False, datadir="", profile="", headless=False)
 def gethotdealinfo(page_source: str, site: Site) -> SaleTable | None:
     soup = BeautifulSoup(page_source, "html.parser")
 
-    assert site.hotdeal_table is not None
+    if site.hotdeal_table is None:
+        raise ParseError("잘못된 사이트 핫딜 파싱 시도함")
     table = soup.select_one(site.hotdeal_table)
 
     if table is None:

@@ -8,26 +8,25 @@ import yaml
 import consts
 from classes import ConfigError
 
-_FILE_LOADED = False
-_settings: Dict[str, Any] = {}
-
-
-def _getoption(sitename: str, option: str):
-    section = "common"
-    if sitename != "common":
-        section = sitename
-    return _settings[section][option]
-
 
 class _Options(object):
     def __init__(self) -> None:
-        self.common = _Common()
-        self.sites: list[Site] = []
+        self.common = _Common(self)
+        self.sites = [Site(sitecode, self) for sitecode in consts.SITES]
+        self._settings: Dict[str, Dict[str, Any]] = {}
+        self._file_loaded = False
 
-        for sitecode in consts.SITES:
-            self.sites.append(Site(sitecode))
+    def _getoption(self, sitename: str, option: str) -> Any:
+        section = "common"
+        if sitename != "common":
+            section = sitename
 
-    def load_settings(self):
+        if section not in self._settings:
+            raise ValueError("잘못된 옵션 접근")
+
+        return self._settings[section][option]
+
+    def load_settings(self) -> None:
         if len(sys.argv) > 1 and sys.argv[1] == "test":  # test mode
             consts.SETTING_FILE_NAME = "test.yaml"  # noqa
 
@@ -35,20 +34,18 @@ class _Options(object):
             shutil.copy("onadailyorigin.yaml", consts.SETTING_FILE_NAME)
 
         with open(consts.SETTING_FILE_NAME, "r", encoding="utf-8") as f:  # load yaml
-            global _settings
-            _settings = dict(yaml.safe_load(f))
+            self._settings = dict(yaml.safe_load(f))
 
         self._check_yaml_valid()
 
-        global _FILE_LOADED
-        _FILE_LOADED = True
+        self._file_loaded = True
 
-        order = _getoption("common", "order")
+        order = self._getoption("common", "order")
         self.common._order = []
         for sitename in order:
             self.common._order.append(self.getsite(sitename))
 
-    def getsite(self, sitename) -> "Site":
+    def getsite(self, sitename: str) -> "Site":
         return [x for x in self.sites if x.name == sitename][0]
 
     def datadir_required(self) -> bool:
@@ -58,9 +55,8 @@ class _Options(object):
                 checklist.append(site.login != "default")
         return any(checklist)
 
-    def _check_yaml_valid(self):
+    def _check_yaml_valid(self) -> None:
         default_section = {"enable": False, "login": "default", "id": None, "password": None}
-        edited = False
 
         default_common = {
             "datadir": None,
@@ -80,27 +76,25 @@ class _Options(object):
         if len(common_type_hint) + 1 != len(default_common):
             raise ValueError("타입 힌트 수정해야 함")
 
-        if "common" not in _settings:
-            _settings["common"] = {}
+        if "common" not in self._settings:
+            self._settings["common"] = {}
 
         for k, v in default_common.items():
-            if k not in _settings["common"]:
-                _settings["common"][k] = v
-                edited = True
+            if k not in self._settings["common"]:
+                self._settings["common"][k] = v
 
-        for site in consts.SITE_NAMES:
-            if site not in _settings:
-                _settings[site] = default_section.copy()
-                _settings["common"]["order"].append(site)
-                edited = True
+        for sitename in consts.SITE_NAMES:
+            if sitename not in self._settings:
+                self._settings[sitename] = default_section.copy()
+                self._settings["common"]["order"].append(sitename)
 
-        if edited:
-            with open(consts.SETTING_FILE_NAME, "w") as f:
-                yaml.dump(_settings, f, sort_keys=False)
+        with open(consts.SETTING_FILE_NAME, "w") as f:
+            yaml.dump(self._settings, f, sort_keys=False)
+
         if self.datadir_required():
-            if _settings["common"]["headless"]:
+            if self._settings["common"]["headless"]:
                 raise ConfigError("소셜 로그인과 headless 모드를 같이 사용할 수 없습니다.")
-            if _getoption("common", "datadir") is None or _getoption("common", "profile") is None:
+            if self._getoption("common", "datadir") is None or self._getoption("common", "profile") is None:
                 raise ConfigError("소셜 로그인을 사용하려면 설정 파일의 datadir, profile을 지정해 주세요.")
 
         for site in self.sites:
@@ -111,7 +105,7 @@ class _Options(object):
                 if site.btn_login is None:
                     raise ConfigError(f"{site.name}의 {login} 로그인은 지원하지 않습니다.")
 
-        order = _settings["common"]["order"]
+        order = self._settings["common"]["order"]
 
         if len(set(order)) != len(consts.SITES):
             raise ConfigError("설정 파일의 order 항목에 중복되거나 누락된 사이트가 있습니다.")
@@ -121,7 +115,7 @@ class _Options(object):
                 raise ConfigError("설정 파일의 order 항목에 사이트 철자가 틀렸습니다.")
 
     def __getattr__(self, __name: str) -> Any:
-        if not _FILE_LOADED:
+        if not self._file_loaded:
             raise ConfigError("설정 파일이 로드되지 않음")
         super().__getattribute__(__name)
 
@@ -137,13 +131,14 @@ class _Common(object):
     retrytime: int
     keywordnoti: list[str]
 
-    def __init__(self) -> None:
+    def __init__(self, options: _Options) -> None:
         self._order: Optional[list["Site"]] = None
+        self._options = options
 
-    def __getattr__(self, key):
+    def __getattr__(self, key: str) -> Any:
         if key == "entertoquit":
             return self._entertoquit()
-        return _getoption("common", key)
+        return self._options._getoption("common", key)
 
     @property
     def order(self) -> list["Site"]:
@@ -152,12 +147,12 @@ class _Common(object):
         return self._order
 
     def _entertoquit(self) -> bool:
-        if not _FILE_LOADED:
+        if not self._options._file_loaded:
             return True
 
-        if "entertoquit" not in _settings["common"]:
+        if "entertoquit" not in self._options._settings["common"]:
             return True
-        return _getoption("common", "entertoquit")
+        return self._options._getoption("common", "entertoquit")
 
 
 class Site(object):
@@ -167,7 +162,9 @@ class Site(object):
     id: Optional[str]
     password: Optional[str]
 
-    def __init__(self, sitecode: int) -> None:
+    def __init__(self, sitecode: int, options: _Options) -> None:
+        self._options = options
+
         self.code = sitecode
         self.name = consts.SITE_NAMES[sitecode]
         self.main_url = consts.URLS[sitecode]
@@ -179,7 +176,7 @@ class Site(object):
         self.login_check_xpath = consts.CHK_LOGIN[sitecode]
 
         self.btn_stamp = consts.BTN_STAMP[sitecode]
-        self.hotdeal_table = consts.HOTDEAL_TABLE[sitecode]  # type: ignore
+        self.hotdeal_table = consts.HOTDEAL_TABLE[sitecode]
         self.stamp_calendar = consts.STAMP_CALENDAR[sitecode]
 
     @property
@@ -187,7 +184,7 @@ class Site(object):
         return consts.LOGIN[self.login][self.code]
 
     def __getattr__(self, __name: str) -> Any:
-        return _getoption(self.name, __name)
+        return self._options._getoption(self.name, __name)
 
     def __eq__(self, __value: object) -> bool:
         if not isinstance(__value, Site):
@@ -201,7 +198,7 @@ class Site(object):
     def __ne__(self, __value: object) -> bool:
         return not self == __value
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         return hash(self.name)
 
 

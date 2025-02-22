@@ -18,5 +18,5 @@ class HotdealInfo(object):
         self.price = price
         self.dc_price = dc_price
 
-    def to_row(self) -> list:
+    def to_row(self) -> list[str]:
         return [self.name, self.price, self.dc_price]
