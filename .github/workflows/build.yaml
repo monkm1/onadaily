@@ -43,7 +43,7 @@ jobs:
           cp LICENSE dist/onadaily/LICENSE.txt
           Compress-Archive .\dist\onadaily\* onadaily-windows.zip
       - name: Release check
-        uses: actions-ecosystem/action-regex-match@v2
+        uses: kaisugi/action-regex-match@v1.0.1
         id: regex
         with:
           text: ${{ github.ref }}
