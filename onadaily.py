@@ -114,7 +114,7 @@ class Onadaily(object):
 
             driver.wait_for_selector(site.stamp_calendar)
             if check_already_stamp(site, driver.page_source):
-                result.message = "이미 출첵함"
+                result.message = "ℹ️ 이미 출첵함"
                 result.passed = True
                 return result
             if site.name == "onami":
@@ -134,11 +134,11 @@ class Onadaily(object):
                     raise ParseError("달력 파싱 오류")
 
             alert.accept()
-            result.message = "출석 체크 성공"
+            result.message = "✅ 출석 체크 성공"
             result.passed = True
             return result
         except TimeoutException:
-            result.message = "출석 체크 버튼 찾지 못함"
+            result.message = "⚠️ 출석 체크 버튼 찾지 못함"
             return result
 
     def run(self) -> None:
