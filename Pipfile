@@ -10,6 +10,7 @@ beautifulsoup4 = "*"
 prettytable = "==3.5.0"
 pytz = "*"
 undetected-chromedriver = "*"
+keyring = "*"
 
 [dev-packages]
 mypy = "*"

@@ -1,9 +1,12 @@
+import getpass
 import shutil
 import sys
 from os import path
 from typing import Any, Dict, Optional, get_type_hints
 
+import keyring
 import yaml
+from keyring.errors import PasswordDeleteError
 
 import consts
 from classes import ConfigError
@@ -88,8 +91,7 @@ class _Options(object):
                 self._settings[sitename] = default_section.copy()
                 self._settings["common"]["order"].append(sitename)
 
-        with open(consts.SETTING_FILE_NAME, "w") as f:
-            yaml.dump(self._settings, f, sort_keys=False, allow_unicode=True)
+        self.save_yaml()
 
         if self.datadir_required():
             if self._settings["common"]["headless"]:
@@ -100,8 +102,6 @@ class _Options(object):
         for site in self.sites:
             if site.enable is True:
                 login = site.login
-                if login == "default" and (site.id is None or site.password is None):
-                    raise ConfigError(f"설정 파일의 {site.name} 아이디와 패스워드를 지정해 주세요.")
                 if site.btn_login is None:
                     raise ConfigError(f"{site.name}의 {login} 로그인은 지원하지 않습니다.")
 
@@ -118,6 +118,10 @@ class _Options(object):
         if not self._file_loaded:
             raise ConfigError("설정 파일이 로드되지 않음")
         super().__getattribute__(__name)
+
+    def save_yaml(self) -> None:
+        with open(consts.SETTING_FILE_NAME, "w", encoding="utf8") as f:
+            yaml.dump(self._settings, f, sort_keys=False, allow_unicode=True)
 
 
 class _Common(object):
@@ -179,12 +183,56 @@ class Site(object):
         self.hotdeal_table = consts.HOTDEAL_TABLE[self.name]
         self.stamp_calendar = consts.STAMP_CALENDAR[self.name]
 
+        self._serviceName = "Onadaily"
+
     @property
     def btn_login(self) -> str | None:
         return consts.LOGIN[self.login][self.name]
 
     def __getattr__(self, __name: str) -> Any:
+        if __name == "id":
+            if self._options._getoption(self.name, "id") != "saved" or self.get_credential("id") is None:
+                id = input(f"{self.name} 의 아이디 입력 :")
+                self.save_credential("id", id)
+                print("✅ 아이디 저장 완료!")
+
+            return self.get_credential("id")
+
+        elif __name == "password":
+            if self._options._getoption(self.name, "password") != "saved" or self.get_credential("password") is None:
+                while True:
+                    password1 = getpass.getpass(f"{self.name}의 비밀번호 입력(입력 완료 후 엔터) :")
+                    password2 = getpass.getpass("다시 입력 :")
+
+                    if password1 == password2:
+                        self.save_credential("password", password1)
+                        print("✅ 비밀번호 확인 및 저장 완료!")
+                        break
+                    else:
+                        print("🚨 비밀번호가 일치하지 않습니다. 다시 입력해주세요.")
+
+            return self.get_credential("password")
+
         return self._options._getoption(self.name, __name)
+
+    def save_credential(self, type: str, value: str) -> None:
+        if type not in ["id", "password"]:
+            raise ValueError("잘못된 type")
+
+        try:
+            keyring.delete_password(f"{self._serviceName}@{self.name}", type)
+        except PasswordDeleteError:
+            pass
+
+        keyring.set_password(f"{self._serviceName}@{self.name}", type, value)
+
+        self._options._settings[self.name][type] = "saved"
+        self._options.save_yaml()
+
+    def get_credential(self, type: str) -> str | None:
+        if type not in ["id", "password"]:
+            raise ValueError("잘못된 type")
+        return keyring.get_password(f"{self._serviceName}@{self.name}", type)
 
     def __eq__(self, __value: object) -> bool:
         if not isinstance(__value, Site):
