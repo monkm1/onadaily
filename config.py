@@ -89,7 +89,7 @@ class _Options(object):
                 self._settings["common"]["order"].append(sitename)
 
         with open(consts.SETTING_FILE_NAME, "w") as f:
-            yaml.dump(self._settings, f, sort_keys=False)
+            yaml.dump(self._settings, f, sort_keys=False, allow_unicode=True)
 
         if self.datadir_required():
             if self._settings["common"]["headless"]:
@@ -167,21 +167,21 @@ class Site(object):
 
         self.code = sitecode
         self.name = consts.SITE_NAMES[sitecode]
-        self.main_url = consts.URLS[sitecode]
-        self.stamp_url = consts.STAMP_URLS[sitecode]
-        self.login_url = consts.LOGIN_URLS[sitecode]
+        self.main_url = consts.URLS[self.name]
+        self.stamp_url = consts.STAMP_URLS[self.name]
+        self.login_url = consts.LOGIN_URLS[self.name]
 
-        self.input_id = consts.INPUT_ID[sitecode]
-        self.input_pwd = consts.INPUT_PWD[sitecode]
-        self.login_check_xpath = consts.CHK_LOGIN[sitecode]
+        self.input_id = consts.INPUT_ID[self.name]
+        self.input_pwd = consts.INPUT_PWD[self.name]
+        self.login_check_xpath = consts.CHK_LOGIN[self.name]
 
-        self.btn_stamp = consts.BTN_STAMP[sitecode]
-        self.hotdeal_table = consts.HOTDEAL_TABLE[sitecode]
-        self.stamp_calendar = consts.STAMP_CALENDAR[sitecode]
+        self.btn_stamp = consts.BTN_STAMP[self.name]
+        self.hotdeal_table = consts.HOTDEAL_TABLE[self.name]
+        self.stamp_calendar = consts.STAMP_CALENDAR[self.name]
 
     @property
-    def btn_login(self) -> str:
-        return consts.LOGIN[self.login][self.code]
+    def btn_login(self) -> str | None:
+        return consts.LOGIN[self.login][self.name]
 
     def __getattr__(self, __name: str) -> Any:
         return self._options._getoption(self.name, __name)
