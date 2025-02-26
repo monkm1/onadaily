@@ -1,7 +1,7 @@
 from typing import Self
 from urllib.parse import urlsplit, urlunsplit
 
-import undetected_chromedriver as uc  # type: ignore
+import undetected_chromedriver as uc  # type: ignore[import-untyped]
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.webelement import WebElement

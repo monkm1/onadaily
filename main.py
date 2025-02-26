@@ -24,4 +24,4 @@ if __name__ == "__main__":
         logger.exception("설정 파일 분석 중 오류 발생 :")
 
     if options.common.entertoquit:
-        print("종료하려면 Enter를 누르세요...")
+        input("종료하려면 Enter를 누르세요...")

@@ -101,7 +101,7 @@ class Onadaily(object):
                 assert site.password is not None
                 pwdform.send_keys(site.password)  # write id and password
 
-            driver.wait_move_click(site.btn_login)
+            driver.wait_move_click(site.btn_login)  # type: ignore[arg-type]
 
             if site.name == "banana":
                 driver.switch_to.window(current_window_handle)

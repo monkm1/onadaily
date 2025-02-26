@@ -3,7 +3,7 @@ from math import ceil
 from os import path
 
 import pytz
-import undetected_chromedriver as uc  # type: ignore
+import undetected_chromedriver as uc  # type: ignore[import-untyped]
 from bs4 import BeautifulSoup
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.remote.webelement import WebElement
