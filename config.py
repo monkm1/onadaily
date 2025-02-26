@@ -192,9 +192,15 @@ class Site(object):
     def __getattr__(self, __name: str) -> Any:
         if __name == "id":
             if self._options._getoption(self.name, "id") != "saved" or self.get_credential("id") is None:
-                id = input(f"{self.name} 의 아이디 입력 :")
-                self.save_credential("id", id)
-                print("✅ 아이디 저장 완료!")
+                while True:
+                    id = input(f"{self.name} 의 아이디 입력 :")
+
+                    if not id or id.isspace():
+                        print("🚨 아이디를 입력해 주세요.")
+                        continue
+
+                    self.save_credential("id", id)
+                    print("✅ 아이디 저장 완료!")
 
             return self.get_credential("id")
 
@@ -202,6 +208,11 @@ class Site(object):
             if self._options._getoption(self.name, "password") != "saved" or self.get_credential("password") is None:
                 while True:
                     password1 = getpass.getpass(f"{self.name}의 비밀번호 입력(입력 완료 후 엔터) :")
+
+                    if not password1 or password1.isspace():
+                        print("🚨 패스워드를 입력해 주세요.")
+                        continue
+
                     password2 = getpass.getpass("다시 입력 :")
 
                     if password1 == password2:
