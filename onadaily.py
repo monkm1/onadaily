@@ -138,7 +138,7 @@ class Onadaily(object):
             result.passed = True
             return result
         except TimeoutException:
-            result.message = "⚠️ 출석 체크 버튼 찾지 못함"
+            result.message = "❌ 출석 체크 버튼 찾지 못함"
             return result
 
     def run(self) -> None:
@@ -170,7 +170,7 @@ class Onadaily(object):
                         self.printsiteconfig(self._currentsite, driver)
                     finally:
                         if self.passed[site].iserror:
-                            self.passed[site].message = "실패, 오류 출력 확인"
+                            self.passed[site].message = "❌ 실패, 오류 출력 확인"
 
         if all(self.passed.values()):
             if len(options.common.keywordnoti) > 0:
@@ -181,7 +181,7 @@ class Onadaily(object):
                     print("키워드 알림 없음")
         else:
             print("===============")
-            print(f"재시도 {max_retries}번 실패")
+            print(f"❌ 재시도 {max_retries}번 실패")
             failedsites = [result.site.name for result in self.passed.values() if not result.passed]
             print(f"실패한 사이트 : {failedsites}")
 

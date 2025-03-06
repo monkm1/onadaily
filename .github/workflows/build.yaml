@@ -15,31 +15,34 @@ jobs:
         uses: actions/setup-python@v2
         with:
           python-version: 3.11
-          cache: 'pip'
+          cache: 'pipenv'
+      - name: Install pipenv
+        run: |
+          pip install pipenv
       - name: Install dependencies
         run: |
-          pip install -r requirements.txt
-          pip install pyinstaller
-          pip install pip-licenses
+          pipenv install
+          pipenv run pip install pyinstaller
+          pipenv run pip install pip-licenses
         shell: bash
       - name: Build onefile
         run: |
-          pyinstaller --onefile main.py --name onadaily
+          pipenv run pyinstaller --onefile main.py --name onadaily
           cp onadailyorigin.yaml dist/
-          pip-licenses > dist/depend-licenses.txt
+          pipenv run pip-licenses > dist/depend-licenses.txt
           cp LICENSE dist/LICENSE.txt
           Compress-Archive .\dist\* onadaily-windows-onefile.zip
           ls
         shell: powershell
       - name: Build
         run: |
-          pyinstaller main.py --name onadaily
+          pipenv run pyinstaller main.py --name onadaily
           cp onadailyorigin.yaml dist/onadaily/
-          pip-licenses > dist/onadaily/depend-licenses.txt
+          pipenv run pip-licenses > dist/onadaily/depend-licenses.txt
           cp LICENSE dist/onadaily/LICENSE.txt
           Compress-Archive .\dist\onadaily\* onadaily-windows.zip
       - name: Release check
-        uses: actions-ecosystem/action-regex-match@v2
+        uses: kaisugi/action-regex-match@v1.0.1
         id: regex
         with:
           text: ${{ github.ref }}
