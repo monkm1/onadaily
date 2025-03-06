@@ -47,14 +47,14 @@ CHK_LOGIN = {
     "showdang": "//a[text()='LOGOUT']",
     "banana": "//a[@title='로그아웃']",
     "dingdong": "//a[text()='로그아웃']",
-    "domae": "//a[contains(@class, 'top_basket')]",
+    "domae": "//a[text()='로그아웃']",
 }
 BTN_LOGIN = {
     "onami": "//a[contains(@onclick, 'login')]",
     "showdang": "//button[contains(@class, 'member_login')]",
     "banana": "//a[contains(@onclick, 'loginch')]",
     "dingdong": "//a[contains(@onclick, 'login')]",
-    "domae": "//a[contains(@onclick, 'MemberAction.login')]",
+    "domae": "//button[contains(@onclick, 'MemberAction.login')]",
 }
 
 BTN_GOOGLE_LOGIN = {
@@ -121,7 +121,7 @@ STAMP_CALENDAR: dict[str, str] = {
     "showdang": ".calendar_sec > table >tbody",
     "banana": "table.calendar>tbody",
     "dingdong": "table[class^=xans-element-]>tbody",
-    "domae": "table[class^=xans-element-]>tbody",
+    "domae": "div.xans-attend-calendar>table>tbody",
 }
 
 BNA_LOGIN_WND_XPATH = "//a[@title='로그인']"

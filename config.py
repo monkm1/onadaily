@@ -88,7 +88,7 @@ class _Options(object):
                 self._settings[sitename] = default_section.copy()
                 self._settings["common"]["order"].append(sitename)
 
-        with open(consts.SETTING_FILE_NAME, "w") as f:
+        with open(consts.SETTING_FILE_NAME, "w", encoding="utf8") as f:
             yaml.dump(self._settings, f, sort_keys=False, allow_unicode=True)
 
         if self.datadir_required():
