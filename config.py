@@ -201,6 +201,7 @@ class Site(object):
 
                     self.save_credential("id", id)
                     print("✅ 아이디 저장 완료!")
+                    break
 
             return self.get_credential("id")
 
