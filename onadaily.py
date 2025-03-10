@@ -2,7 +2,7 @@ import logging
 from time import sleep
 
 from prettytable import PrettyTable
-from selenium.common import TimeoutException, WebDriverException
+from selenium.common import TimeoutException, UnexpectedAlertPresentException, WebDriverException
 
 from config import Site, options
 from consts import BNA_LOGIN_WND_XPATH
@@ -158,6 +158,10 @@ class Onadaily(object):
                     try:
                         self.passed[site] = self.check(driver, site)
 
+                    except UnexpectedAlertPresentException as ex:
+                        print(f"사이트 메시지 : {ex.alert_text}")
+                        print("아이디/비밀번호가 틀린거라면 설정 파일의 id/password 항목을 지우세요.")
+                        logger.exception("\n")
                     except WebDriverException:
                         self.passed[site].iserror = True
                         logger.exception(

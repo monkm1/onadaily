@@ -11,6 +11,7 @@ prettytable = "==3.5.0"
 pytz = "*"
 undetected-chromedriver = "*"
 keyring = "*"
+pwinput = "*"
 
 [dev-packages]
 mypy = "*"

@@ -19,9 +19,9 @@ if __name__ == "__main__":
         main = Onadaily()
         main.run()
     except ConfigError as ex:
-        logger.exception("설정 파일 오류 :\n", ex)
+        logger.exception("설정 파일 오류 :\n")
     except YAMLError:
-        logger.exception("설정 파일 분석 중 오류 발생 :")
+        logger.exception("설정 파일 분석 중 오류 발생 :\n")
 
     if options.common.entertoquit:
         input("종료하려면 Enter를 누르세요...")
