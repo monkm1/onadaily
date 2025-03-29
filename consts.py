@@ -26,7 +26,7 @@ LOGIN_URLS = {
     "showdang": "https://showdang.co.kr/member/login.php",
     "banana": "https://www.bananamall.co.kr/",
     "dingdong": "https://dingdong.co.kr/member/login.html",
-    "domae": "https://domaedoll.com/intro/adult_im.html",
+    "domae": "https://domaedoll.com/member/login.html",
 }
 INPUT_ID = {
     "onami": '//*[@id="member_id"]',
@@ -54,7 +54,7 @@ BTN_LOGIN = {
     "showdang": "//button[contains(@class, 'member_login')]",
     "banana": "//a[contains(@onclick, 'loginch')]",
     "dingdong": "//a[contains(@onclick, 'login')]",
-    "domae": "//button[contains(@onclick, 'MemberAction.login')]",
+    "domae": "//a[contains(@onclick, 'MemberAction.login')]",
 }
 
 BTN_GOOGLE_LOGIN = {
@@ -62,7 +62,7 @@ BTN_GOOGLE_LOGIN = {
     "showdang": "//a[contains(@class,'btn_google_login')]",
     "banana": "//a[contains(@onclick, 'google_login')]/img",
     "dingdong": "//a[contains(@onclick, 'MemberAction') and contains(@onclick,'googleplus')]/img",
-    "domae": None,
+    "domae": "//a[contains(@onclick, 'googleplus')]",
 }
 BTN_KAKAO_LOGIN = {
     "onami": None,

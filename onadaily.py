@@ -159,6 +159,7 @@ class Onadaily(object):
                         self.passed[site] = self.check(driver, site)
 
                     except UnexpectedAlertPresentException as ex:
+                        self.passed[site].iserror = True
                         print(f"사이트 메시지 : {ex.alert_text}")
                         print("아이디/비밀번호가 틀린거라면 설정 파일의 id/password 항목을 지우세요.")
                         logger.exception("\n")
