@@ -2,6 +2,7 @@ from typing import Self
 from urllib.parse import urlsplit, urlunsplit
 
 import undetected_chromedriver as uc  # type: ignore[import-untyped]
+from selenium.webdriver import Keys
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.webelement import WebElement
@@ -78,3 +79,7 @@ class Webdriverwrapper(uc.Chrome):
 
     def __exit__(self, exc_type, exc_val, exc_tb) -> None:
         self.quit()
+
+    def cleartextarea(self, element: WebElement) -> None:
+        element.send_keys(Keys.CONTROL + "a")
+        element.send_keys(Keys.DELETE)

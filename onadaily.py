@@ -1,12 +1,18 @@
 import logging
-from time import sleep
 
 from prettytable import PrettyTable
-from selenium.common import TimeoutException, WebDriverException
 
 from config import Site, options
-from consts import BNA_LOGIN_WND_XPATH
-from utils import ParseError, check_already_stamp, cleartextarea, get_chrome_options, gethotdealinfo
+from strategies import get_login_strategy, get_stamp_strategy
+from utils import (
+    AlreadyStamped,
+    LoggingInfo,
+    LoginFailedError,
+    StampFailedError,
+    get_chrome_options,
+    gethotdealinfo,
+    save_log_error,
+)
 from webdriverwrapper import Webdriverwrapper
 
 logger = logging.getLogger("onadaily")
@@ -32,6 +38,8 @@ class Onadaily(object):
         self.keywordnoti = PrettyTable()
         self.keywordnoti.field_names = ["사이트", "품명", "정상가", "할인가"]
 
+        self.last_exceptions: dict[Site, LoggingInfo] = {}
+
         options.load_settings()
 
     def initdriver(self) -> Webdriverwrapper:
@@ -47,99 +55,55 @@ class Onadaily(object):
         return driver
 
     def check(self, driver: Webdriverwrapper, site: Site) -> StampResult:
-        print(f"== {site.name} ==")
         result = StampResult(site)
+        try:
+            print(f"== {site.name} ==")
 
-        if not site.enable:
-            print("skip")
-            result.message = "스킵"
+            if not site.enable:
+                print("skip")
+                result.message = "스킵"
+                result.passed = True
+                return result
+
+            login_strategy = get_login_strategy(site)
+            login_strategy.login(driver, site)
+            print("로그인 성공")
+
+            if options.common.showhotdeal and site.hotdeal_table is not None:  # 핫딜 테이블 불러오기
+                table = gethotdealinfo(driver.page_source, site)
+                if table is not None:
+                    print(table)
+
+                    if len(options.common.keywordnoti) > 0:
+                        keywordproducts = table.keywordcheck(options.common.keywordnoti)
+                        if len(keywordproducts) > 0:
+                            self.keywordnoti.add_rows(keywordproducts)
+
+            stamp_strategy = get_stamp_strategy(site)
+            stamp_strategy.stamp(driver, site)
+
+            result.message = "✅ 출석 체크 성공"
             result.passed = True
-            return result
+        except AlreadyStamped as e:
+            result.message = f"ℹ️ 이미 출첵함\n-{e}"
+            result.passed = True
+        except LoginFailedError as e:
+            result.message = f"❌ 로그인 중 실패\n-{e}"
+            result.iserror = True
 
-        driver.get(site.login_url)
-        self.login(driver, site)
-        print("로그인 성공")
-
-        if options.common.showhotdeal and site.hotdeal_table is not None:  # 핫딜 테이블 불러오기
-            table = gethotdealinfo(driver.page_source, site)
-            if table is not None:
-                print(table)
-
-                if len(options.common.keywordnoti) > 0:
-                    keywordproducts = table.keywordcheck(options.common.keywordnoti)
-                    if len(keywordproducts) > 0:
-                        self.keywordnoti.add_rows(keywordproducts)
-
-        driver.get(site.stamp_url)
-        result = self.stamp(driver, site)
+        except StampFailedError as e:
+            result.message = f"❌ 출석체크 중 실패\n-{e}"
+            result.iserror = True
+        except Exception as e:
+            result.message = f"❌ 알 수 없는 오류\n-{e}"
+            result.iserror = True
+        finally:
+            if result.iserror:
+                result.passed = False
+                self.last_exceptions[site] = LoggingInfo(site, driver)
 
         print(result.message)
         return result
-
-    def login(self, driver: Webdriverwrapper, site: Site) -> None:
-        if not driver.check_logined(site):  # 로그인 상태 체크(로그인 이미 되어있는 경우 있음)
-            current_window_handle = driver.current_window_handle
-            if site.name != "banana":
-                driver.get(site.login_url)
-            else:
-                driver.wait_move_click(BNA_LOGIN_WND_XPATH)
-
-                another_window = list(set(driver.window_handles) - {driver.current_window_handle})[0]
-                driver.switch_to.window(another_window)
-
-                if driver.check_logined(site):
-                    return
-
-            if site.login == "default":
-                idform = driver.wait_move_click(site.input_id)
-                cleartextarea(idform)
-                assert site.id is not None
-                idform.send_keys(site.id)
-
-                pwdform = driver.wait_move_click(site.input_pwd)
-                cleartextarea(pwdform)
-                assert site.password is not None
-                pwdform.send_keys(site.password)  # write id and password
-
-            driver.wait_move_click(site.btn_login)  # type: ignore[arg-type]
-
-            if site.name == "banana":
-                driver.switch_to.window(current_window_handle)
-
-            driver.wait_login(site)
-
-    def stamp(self, driver: Webdriverwrapper, site: Site) -> StampResult:
-        try:
-            result = StampResult(site)
-
-            driver.wait_for_selector(site.stamp_calendar)
-            if check_already_stamp(site, driver.page_source):
-                result.message = "ℹ️ 이미 출첵함"
-                result.passed = True
-                return result
-            if site.name == "onami":
-                sleep(1)
-            driver.wait_move_click(site.btn_stamp)
-
-            driver.wait_for_alert()
-            alert = driver.switch_to.alert
-
-            print(f"메시지 : {alert.text}")
-
-            if site.name == "banana":
-                if alert.text == "잠시후 다시 시도해 주세요.":
-                    alert.accept()
-                    raise TimeoutException()
-                elif alert.text == "이미 출석체크를 하셨습니다.":
-                    raise ParseError("달력 파싱 오류")
-
-            alert.accept()
-            result.message = "✅ 출석 체크 성공"
-            result.passed = True
-            return result
-        except TimeoutException:
-            result.message = "❌ 출석 체크 버튼 찾지 못함"
-            return result
 
     def run(self) -> None:
         retry_count = 0
@@ -155,22 +119,7 @@ class Onadaily(object):
                     if self.passed[site]:
                         continue
 
-                    try:
-                        self.passed[site] = self.check(driver, site)
-
-                    except WebDriverException:
-                        self.passed[site].iserror = True
-                        logger.exception(
-                            "크롬 에러가 발생했습니다. 소셜 로그인을 사용하면 열려있는 크롬 창을 전부 닫고 실행해 주세요."
-                        )
-                        self.printsiteconfig(self._currentsite, driver)
-                    except Exception:
-                        self.passed[site].iserror = True
-                        logger.exception("")
-                        self.printsiteconfig(self._currentsite, driver)
-                    finally:
-                        if self.passed[site].iserror:
-                            self.passed[site].message = "❌ 실패, 오류 출력 확인"
+                    self.passed[site] = self.check(driver, site)
 
         if all(self.passed.values()):
             if len(options.common.keywordnoti) > 0:
@@ -182,18 +131,13 @@ class Onadaily(object):
         else:
             print("===============")
             print(f"❌ 재시도 {max_retries}번 실패")
-            failedsites = [result.site.name for result in self.passed.values() if not result.passed]
+            failedsites = [result.site for result in self.passed.values() if not result.passed]
             print(f"실패한 사이트 : {failedsites}")
+
+            for failedsite in failedsites:
+                if failedsite in self.last_exceptions:
+                    save_log_error(self.last_exceptions[failedsite])
 
         print("======결과======")
         for result in self.passed.values():
             print(f"사이트 : {result.site.name} / {result.message}")
-
-    def printsiteconfig(self, site: Site, driver: Webdriverwrapper) -> None:
-        logger.info(f"site : {site.code}/{site.name}")
-        logger.info(f"enable : {site.enable}")
-        logger.info(f"login : {site.login}")
-        logger.info(f"datadir required : {options.datadir_required()}")
-
-        if driver is not None and not driver.quited:
-            logger.info(f"Chrome version : {driver.capabilities['browserVersion']}")

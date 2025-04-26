@@ -1,25 +1,43 @@
+import functools
+import os
+import sys
+import traceback
 from datetime import datetime
 from math import ceil
 from os import path
+from typing import Any, Callable, Type
 
 import pytz
 import undetected_chromedriver as uc  # type: ignore[import-untyped]
 from bs4 import BeautifulSoup
-from selenium.webdriver.common.keys import Keys
-from selenium.webdriver.remote.webelement import WebElement
+from selenium.common import (
+    NoAlertPresentException,
+    NoSuchElementException,
+    TimeoutException,
+    UnexpectedAlertPresentException,
+    WebDriverException,
+)
 
 from classes import HotdealInfo
 from config import Site
 from saletable import SaleTable
+from webdriverwrapper import Webdriverwrapper
 
 
 class ParseError(Exception):
     pass
 
 
-def cleartextarea(element: WebElement) -> None:
-    element.send_keys(Keys.CONTROL + "a")
-    element.send_keys(Keys.DELETE)
+class LoginFailedError(Exception):
+    pass
+
+
+class StampFailedError(Exception):
+    pass
+
+
+class AlreadyStamped(Exception):
+    pass
 
 
 def check_already_stamp(site: Site, source: str) -> bool:
@@ -125,3 +143,73 @@ def gethotdealinfo(page_source: str, site: Site) -> SaleTable | None:
     resulttable.field_names = ["품명", "정상가", "할인가"]
     resulttable.add_rows([x.to_row() for x in products])
     return resulttable
+
+
+if getattr(sys, "frozen", False):
+    app_path = os.path.dirname(sys.executable)
+else:
+    app_path = os.path.dirname(os.path.abspath(__file__))
+
+LOG_DIR = app_path
+
+
+class LoggingInfo:
+    def __init__(self, site: Site, driver: Webdriverwrapper) -> None:
+        self.now = datetime.now()
+        self.stacktrace = traceback.format_exc()
+        self.site = site
+
+        if driver is not None and not driver.quited:
+            try:
+                self.version = f"Chrome version : {driver.capabilities['browserVersion']}"
+            except:  # noqa
+                self.version = "Chrome version : N/A"
+        else:
+            self.version = "Chrome version : N/A"
+
+    def __str__(self) -> str:
+        return (
+            f"{self.now}\n\n"
+            f"{self.stacktrace}\n\n"
+            f"sitename : {self.site}\n"
+            f"enable : {self.site.enable}\n"
+            f"login : {self.site.login}\n"
+            f"{self.version}"
+        )
+
+
+def save_log_error(logginginfo: LoggingInfo):
+    try:
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
+        filename = os.path.join(LOG_DIR, f"error_{timestamp}.txt")
+
+        with open(filename, "w", encoding="utf-8") as f:
+            f.write(str(logginginfo))
+
+    except Exception as ex:
+        print(f"로깅 실패 : {ex}")
+        print(f"원본 오류 : \n{logginginfo.stacktrace}")
+
+
+def handle_selenium_error(wrap_exception: Type[Exception], message_prefix: str):
+    def inner(func: Callable[..., Any]):
+        @functools.wraps(func)
+        def wrapper(self, driver: Webdriverwrapper, site: Site, *args, **kwargs):
+            try:
+                func(self, driver, site, *args, **kwargs)
+            except TimeoutException as ex:
+                raise wrap_exception(f"{message_prefix}/시간 초과 발생") from ex
+            except NoSuchElementException as ex:
+                raise wrap_exception(f"{message_prefix}/요소를 찾을 수 없음") from ex
+            except UnexpectedAlertPresentException as ex:
+                raise wrap_exception(f"{message_prefix}/처리되지 않은 얼럿 발생") from ex
+            except NoAlertPresentException as ex:
+                raise wrap_exception(f"{message_prefix}/처리할 얼럿 없음") from ex
+            except WebDriverException as ex:
+                raise wrap_exception(
+                    f"{message_prefix}/알 수 없는 셀레니움 에러\n소셜 로그인을 사용중이라면 열려있는 크롬을 모두 닫고 실행하세요."
+                ) from ex
+
+        return wrapper
+
+    return inner

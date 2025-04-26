@@ -15,7 +15,7 @@ from classes import ConfigError
 class _Options(object):
     def __init__(self) -> None:
         self.common = _Common(self)
-        self.sites = [Site(sitecode, self) for sitecode in consts.SITES]
+        self.sites = [Site(site_name, self) for site_name in consts.SITE_NAMES]
         self._settings: Dict[str, Dict[str, Any]] = {}
         self._file_loaded = False
 
@@ -91,8 +91,6 @@ class _Options(object):
                 self._settings[sitename] = default_section.copy()
                 self._settings["common"]["order"].append(sitename)
 
-        self.save_yaml()
-
         if self.datadir_required():
             if self._settings["common"]["headless"]:
                 raise ConfigError("소셜 로그인과 headless 모드를 같이 사용할 수 없습니다.")
@@ -113,6 +111,8 @@ class _Options(object):
         for s in order:
             if s not in consts.SITE_NAMES:
                 raise ConfigError("설정 파일의 order 항목에 사이트 철자가 틀렸습니다.")
+
+        self.save_yaml()
 
     def __getattr__(self, __name: str) -> Any:
         if not self._file_loaded:
@@ -166,11 +166,10 @@ class Site(object):
     id: Optional[str]
     password: Optional[str]
 
-    def __init__(self, sitecode: int, options: _Options) -> None:
+    def __init__(self, sitename: str, options: _Options) -> None:
         self._options = options
 
-        self.code = sitecode
-        self.name = consts.SITE_NAMES[sitecode]
+        self.name = sitename
         self.main_url = consts.URLS[self.name]
         self.stamp_url = consts.STAMP_URLS[self.name]
         self.login_url = consts.LOGIN_URLS[self.name]
@@ -247,9 +246,9 @@ class Site(object):
 
     def __eq__(self, __value: object) -> bool:
         if not isinstance(__value, Site):
-            return False
+            return NotImplemented
 
-        if __value.id == self.id and __value.name == self.name:
+        if __value.name == self.name:
             return True
         else:
             return False
@@ -259,6 +258,9 @@ class Site(object):
 
     def __hash__(self) -> int:
         return hash(self.name)
+
+    def __str__(self):
+        return self.name
 
 
 options = _Options()
