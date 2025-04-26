@@ -5,6 +5,7 @@ from os import path
 from typing import Any, Dict, Optional, get_type_hints
 
 import keyring
+import pwinput  # type: ignore[import-untyped]
 import yaml
 from keyring.errors import PasswordDeleteError
 
@@ -200,19 +201,20 @@ class Site(object):
 
                     self.save_credential("id", id)
                     print("✅ 아이디 저장 완료!")
+                    break
 
             return self.get_credential("id")
 
         elif __name == "password":
             if self._options._getoption(self.name, "password") != "saved" or self.get_credential("password") is None:
                 while True:
-                    password1 = getpass.getpass(f"{self.name}의 비밀번호 입력(입력 완료 후 엔터) :")
+                    password1 = pwinput.pwinput(prompt=f"{self.name}의 비밀번호 입력 :")
 
                     if not password1 or password1.isspace():
                         print("🚨 패스워드를 입력해 주세요.")
                         continue
 
-                    password2 = getpass.getpass("다시 입력 :")
+                    password2 = pwinput.pwinput(prompt="다시 입력 :")
 
                     if password1 == password2:
                         self.save_credential("password", password1)

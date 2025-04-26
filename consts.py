@@ -26,7 +26,7 @@ LOGIN_URLS = {
     "showdang": "https://showdang.co.kr/member/login.php",
     "banana": "https://www.bananamall.co.kr/",
     "dingdong": "https://dingdong.co.kr/member/login.html",
-    "domae": "https://domaedoll.com/intro/adult_im.html",
+    "domae": "https://domaedoll.com/member/login.html",
 }
 INPUT_ID = {
     "onami": '//*[@id="member_id"]',
@@ -47,7 +47,7 @@ CHK_LOGIN = {
     "showdang": "//a[text()='LOGOUT']",
     "banana": "//a[@title='로그아웃']",
     "dingdong": "//a[text()='로그아웃']",
-    "domae": "//a[contains(@class, 'top_basket')]",
+    "domae": "//a[text()='로그아웃']",
 }
 BTN_LOGIN = {
     "onami": "//a[contains(@onclick, 'login')]",
@@ -62,7 +62,7 @@ BTN_GOOGLE_LOGIN = {
     "showdang": "//a[contains(@class,'btn_google_login')]",
     "banana": "//a[contains(@onclick, 'google_login')]/img",
     "dingdong": "//a[contains(@onclick, 'MemberAction') and contains(@onclick,'googleplus')]/img",
-    "domae": None,
+    "domae": "//a[contains(@onclick, 'googleplus')]",
 }
 BTN_KAKAO_LOGIN = {
     "onami": None,
@@ -121,7 +121,7 @@ STAMP_CALENDAR: dict[str, str] = {
     "showdang": ".calendar_sec > table >tbody",
     "banana": "table.calendar>tbody",
     "dingdong": "table[class^=xans-element-]>tbody",
-    "domae": "table[class^=xans-element-]>tbody",
+    "domae": "div.xans-attend-calendar>table>tbody",
 }
 
 BNA_LOGIN_WND_XPATH = "//a[@title='로그인']"

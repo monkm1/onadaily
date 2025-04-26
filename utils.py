@@ -119,7 +119,10 @@ def gethotdealinfo(page_source: str, site: Site) -> SaleTable | None:
 
     div = table.select_one("div")
 
-    assert div is not None
+    if div is None:
+        print("핫딜 테이블 찾을 수 없음")
+        return None
+
     products_all = div.find_all("div", recursive=False)
     products = []
     for p in products_all:
