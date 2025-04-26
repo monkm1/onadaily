@@ -90,13 +90,15 @@ class Onadaily(object):
         except LoginFailedError as e:
             result.message = f"❌ 로그인 중 실패\n-{e}"
             result.iserror = True
-
+            self.last_exceptions[site] = LoggingInfo(site, driver)
         except StampFailedError as e:
             result.message = f"❌ 출석체크 중 실패\n-{e}"
             result.iserror = True
+            self.last_exceptions[site] = LoggingInfo(site, driver)
         except Exception as e:
             result.message = f"❌ 알 수 없는 오류\n-{e}"
             result.iserror = True
+            self.last_exceptions[site] = LoggingInfo(site, driver)
         finally:
             if result.iserror:
                 result.passed = False
