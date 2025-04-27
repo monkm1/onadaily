@@ -4,16 +4,10 @@ from time import sleep
 
 from selenium.webdriver.common.alert import Alert
 
+from classes import AlreadyStamped, LoginFailedError, ParseError, StampFailedError
 from config import Site
 from consts import BNA_LOGIN_WND_XPATH
-from utils import (
-    AlreadyStamped,
-    LoginFailedError,
-    ParseError,
-    StampFailedError,
-    check_already_stamp,
-    handle_selenium_error,
-)
+from utils import check_already_stamp, handle_selenium_error
 from webdriverwrapper import Webdriverwrapper
 
 logger = logging.getLogger("onadaily")
@@ -21,6 +15,7 @@ logger = logging.getLogger("onadaily")
 
 class BaseLoginStrategy(abc.ABC):
     def login(self, driver: Webdriverwrapper, site: Site) -> None:
+        self.get_login_url(driver, site)
         if driver.check_logined(site):
             logger.debug(f"{site.name} 로그인 이미 되어있음")
             return
@@ -30,8 +25,12 @@ class BaseLoginStrategy(abc.ABC):
         self._click_login_button(driver, site)
         self._final_login(driver, site)
 
-    def _prepare_login(self, driver: Webdriverwrapper, site: Site) -> None:
+    @handle_selenium_error(LoginFailedError, "로그인 url 열기 실패")
+    def get_login_url(self, driver: Webdriverwrapper, site: Site) -> None:
         driver.get(site.login_url)
+
+    def _prepare_login(self, driver: Webdriverwrapper, site: Site) -> None:
+        pass
 
     @handle_selenium_error(LoginFailedError, "ID/Password 입력 실패")
     def _enter_id_password(self, driver: Webdriverwrapper, site: Site) -> None:

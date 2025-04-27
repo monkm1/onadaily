@@ -2,6 +2,22 @@ class ConfigError(Exception):
     pass
 
 
+class ParseError(Exception):
+    pass
+
+
+class LoginFailedError(Exception):
+    pass
+
+
+class StampFailedError(Exception):
+    pass
+
+
+class AlreadyStamped(Exception):
+    pass
+
+
 class HotdealInfo(object):
     name: str
     price: str

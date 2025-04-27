@@ -2,17 +2,10 @@ import logging
 
 from prettytable import PrettyTable
 
-from config import Site, options
+from classes import AlreadyStamped, LoginFailedError, StampFailedError
+from config import Options, Site
 from strategies import get_login_strategy, get_stamp_strategy
-from utils import (
-    AlreadyStamped,
-    LoggingInfo,
-    LoginFailedError,
-    StampFailedError,
-    get_chrome_options,
-    gethotdealinfo,
-    save_log_error,
-)
+from utils import LoggingInfo, get_chrome_options, gethotdealinfo, save_log_error
 from webdriverwrapper import Webdriverwrapper
 
 logger = logging.getLogger("onadaily")
@@ -32,23 +25,22 @@ class StampResult(object):
 class Onadaily(object):
     def __init__(self) -> None:
         self.passed: dict[Site, StampResult] = {}
+        self.options = Options()
 
-        for site in options.sites:
+        for site in self.options.sites:
             self.passed[site] = StampResult(site)
         self.keywordnoti = PrettyTable()
         self.keywordnoti.field_names = ["사이트", "품명", "정상가", "할인가"]
 
         self.last_exceptions: dict[Site, LoggingInfo] = {}
 
-        options.load_settings()
-
     def initdriver(self) -> Webdriverwrapper:
         driver = Webdriverwrapper(
             get_chrome_options(
-                options.datadir_required(),
-                options.common.datadir,
-                options.common.profile,
-                options.common.headless,
+                self.options.datadir_required(),
+                self.options.common.datadir,
+                self.options.common.profile,
+                self.options.common.headless,
             )
         )
 
@@ -69,13 +61,13 @@ class Onadaily(object):
             login_strategy.login(driver, site)
             print("로그인 성공")
 
-            if options.common.showhotdeal and site.hotdeal_table is not None:  # 핫딜 테이블 불러오기
+            if self.options.common.showhotdeal and site.hotdeal_table is not None:  # 핫딜 테이블 불러오기
                 table = gethotdealinfo(driver.page_source, site)
                 if table is not None:
                     print(table)
 
-                    if len(options.common.keywordnoti) > 0:
-                        keywordproducts = table.keywordcheck(options.common.keywordnoti)
+                    if len(self.options.common.keywordnoti) > 0:
+                        keywordproducts = table.keywordcheck(self.options.common.keywordnoti)
                         if len(keywordproducts) > 0:
                             self.keywordnoti.add_rows(keywordproducts)
 
@@ -84,36 +76,35 @@ class Onadaily(object):
 
             result.message = "✅ 출석 체크 성공"
             result.passed = True
-        except AlreadyStamped as e:
-            result.message = f"ℹ️ 이미 출첵함\n-{e}"
+        except AlreadyStamped:
+            result.message = "ℹ️ 이미 출첵함"
             result.passed = True
         except LoginFailedError as e:
-            result.message = f"❌ 로그인 중 실패\n-{e}"
+            result.message = f"❌ 로그인 중 실패\n\t-{e}"
             result.iserror = True
-            self.last_exceptions[site] = LoggingInfo(site, driver)
+            self.last_exceptions[site] = LoggingInfo(e, site, driver)
         except StampFailedError as e:
-            result.message = f"❌ 출석체크 중 실패\n-{e}"
+            result.message = f"❌ 출석체크 중 실패\n\t-{e}"
             result.iserror = True
-            self.last_exceptions[site] = LoggingInfo(site, driver)
+            self.last_exceptions[site] = LoggingInfo(e, site, driver)
         except Exception as e:
-            result.message = f"❌ 알 수 없는 오류\n-{e}"
+            result.message = f"❌ 알 수 없는 오류\n\t-{e}"
             result.iserror = True
-            self.last_exceptions[site] = LoggingInfo(site, driver)
+            self.last_exceptions[site] = LoggingInfo(e, site, driver)
         finally:
             if result.iserror:
                 result.passed = False
-                self.last_exceptions[site] = LoggingInfo(site, driver)
 
         print(result.message)
         return result
 
     def run(self) -> None:
         retry_count = 0
-        max_retries = options.common.retrytime if options.common.autoretry else 1
+        max_retries = self.options.common.retrytime if self.options.common.autoretry else 1
 
         while retry_count < max_retries and not all(self.passed.values()):
             retry_count += 1
-            order = options.common.order
+            order = self.options.common.order
 
             with self.initdriver() as driver:
                 for site in order:
@@ -124,7 +115,7 @@ class Onadaily(object):
                     self.passed[site] = self.check(driver, site)
 
         if all(self.passed.values()):
-            if len(options.common.keywordnoti) > 0:
+            if len(self.options.common.keywordnoti) > 0:
                 print("======키워드 알림======")
                 if len(self.keywordnoti.rows) > 0:
                     print(self.keywordnoti)
@@ -134,7 +125,7 @@ class Onadaily(object):
             print("===============")
             print(f"❌ 재시도 {max_retries}번 실패")
             failedsites = [result.site for result in self.passed.values() if not result.passed]
-            print(f"실패한 사이트 : {failedsites}")
+            print(f"실패한 사이트 : {str(failedsites)}")
 
             for failedsite in failedsites:
                 if failedsite in self.last_exceptions:

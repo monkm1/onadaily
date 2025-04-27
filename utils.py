@@ -18,26 +18,10 @@ from selenium.common import (
     WebDriverException,
 )
 
-from classes import HotdealInfo
+from classes import HotdealInfo, ParseError
 from config import Site
 from saletable import SaleTable
 from webdriverwrapper import Webdriverwrapper
-
-
-class ParseError(Exception):
-    pass
-
-
-class LoginFailedError(Exception):
-    pass
-
-
-class StampFailedError(Exception):
-    pass
-
-
-class AlreadyStamped(Exception):
-    pass
 
 
 def check_already_stamp(site: Site, source: str) -> bool:
@@ -157,10 +141,17 @@ LOG_DIR = app_path
 
 
 class LoggingInfo:
-    def __init__(self, site: Site, driver: Webdriverwrapper) -> None:
+    def __init__(self, exception: Exception, site: Site | None = None, driver: Webdriverwrapper | None = None) -> None:
         self.now = datetime.now()
         self.stacktrace = traceback.format_exc()
-        self.site = site
+        self.message = str(exception)
+
+        if site is not None:
+            self.sitename = site.name
+            self.sitelogin = site.login
+        else:
+            self.sitename = "None"
+            self.sitelogin = "None"
 
         if driver is not None and not driver.quited:
             try:
@@ -173,18 +164,18 @@ class LoggingInfo:
     def __str__(self) -> str:
         return (
             f"{self.now}\n\n"
+            f"{self.message}\n\n"
             f"{self.stacktrace}\n\n"
-            f"sitename : {self.site}\n"
-            f"enable : {self.site.enable}\n"
-            f"login : {self.site.login}\n"
+            f"sitename : {self.sitename}\n"
+            f"login : {self.sitelogin}\n"
             f"{self.version}"
         )
 
 
-def save_log_error(logginginfo: LoggingInfo):
+def save_log_error(logginginfo: LoggingInfo) -> None:
     try:
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
-        filename = os.path.join(LOG_DIR, f"error_{timestamp}.txt")
+        filename = os.path.join(LOG_DIR, f"error_{logginginfo.sitename}_{timestamp}.txt")
 
         with open(filename, "w", encoding="utf-8") as f:
             f.write(str(logginginfo))
@@ -197,9 +188,9 @@ def save_log_error(logginginfo: LoggingInfo):
 def handle_selenium_error(wrap_exception: Type[Exception], message_prefix: str):
     def inner(func: Callable[..., Any]):
         @functools.wraps(func)
-        def wrapper(self, driver: Webdriverwrapper, site: Site, *args, **kwargs):
+        def wrapper(self, *args, **kwargs):
             try:
-                func(self, driver, site, *args, **kwargs)
+                return func(self, *args, **kwargs)
             except TimeoutException as ex:
                 raise wrap_exception(f"{message_prefix}/시간 초과 발생") from ex
             except NoSuchElementException as ex:

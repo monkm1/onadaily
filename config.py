@@ -1,4 +1,3 @@
-import getpass
 import shutil
 import sys
 from os import path
@@ -13,12 +12,26 @@ import consts
 from classes import ConfigError
 
 
-class _Options(object):
+class Options(object):
+    _instance: "Options" | None = None
+    _initialized: bool
+
+    def __new__(cls, *args, **kwargs):
+        if not cls._instance:
+            cls._instance = super(Options, cls).__new__(cls, *args, **kwargs)
+        return cls._instance
+
     def __init__(self) -> None:
+        if hasattr(self, "_initialized") and self._initialized:
+            return
+        self._initialized = True
+
         self.common = _Common(self)
         self.sites = [Site(site_name, self) for site_name in consts.SITE_NAMES]
         self._settings: Dict[str, Dict[str, Any]] = {}
         self._file_loaded = False
+
+        self.load_settings()
 
     def _getoption(self, sitename: str, option: str) -> Any:
         section = "common"
@@ -136,7 +149,7 @@ class _Common(object):
     retrytime: int
     keywordnoti: list[str]
 
-    def __init__(self, options: _Options) -> None:
+    def __init__(self, options: Options) -> None:
         self._order: Optional[list["Site"]] = None
         self._options = options
 
@@ -167,7 +180,7 @@ class Site(object):
     id: Optional[str]
     password: Optional[str]
 
-    def __init__(self, sitename: str, options: _Options) -> None:
+    def __init__(self, sitename: str, options: Options) -> None:
         self._options = options
 
         self.name = sitename
@@ -263,6 +276,3 @@ class Site(object):
 
     def __str__(self):
         return self.name
-
-
-options = _Options()
