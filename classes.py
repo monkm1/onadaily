@@ -1,21 +1,6 @@
-class ConfigError(Exception):
-    pass
+from prettytable import PrettyTable
 
-
-class ParseError(Exception):
-    pass
-
-
-class LoginFailedError(Exception):
-    pass
-
-
-class StampFailedError(Exception):
-    pass
-
-
-class AlreadyStamped(Exception):
-    pass
+from config import Site
 
 
 class HotdealInfo(object):
@@ -36,3 +21,31 @@ class HotdealInfo(object):
 
     def to_row(self) -> list[str]:
         return [self.name, self.price, self.dc_price]
+
+
+class StampResult(object):
+    def __init__(self, site: Site) -> None:
+        self.site = site
+        self.passed = False
+        self.iserror = False
+        self.message = ""
+
+    def __bool__(self) -> bool:
+        return self.passed
+
+
+class SaleTable(PrettyTable):
+    def __init__(self, site: Site) -> None:
+        self.site = site
+        super().__init__()
+
+    def keywordcheck(self, keywords) -> list:
+        result = []
+        for x in self.rows:
+            for keyword in keywords:
+                if keyword in x[0]:
+                    result.append([self.site.name] + x)
+        return result
+
+    def __len__(self) -> int:
+        return len(self.rows)

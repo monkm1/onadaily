@@ -1,21 +1,31 @@
 import abc
 import logging
 from time import sleep
+from typing import Iterable
 
+from bs4 import BeautifulSoup, Tag
 from selenium.webdriver.common.alert import Alert
 
-from classes import AlreadyStamped, LoginFailedError, ParseError, StampFailedError
+from classes import HotdealInfo, SaleTable
 from config import Site
 from consts import BNA_LOGIN_WND_XPATH
+from errors import (
+    AlreadyStamped,
+    HotDealDataNotFoundError,
+    HotDealTableParseError,
+    LoginFailedError,
+    ParseError,
+    StampFailedError,
+)
 from utils import check_already_stamp, handle_selenium_error
-from webdriverwrapper import Webdriverwrapper
+from webdriverwrapper import WebDriverWrapper
 
 logger = logging.getLogger("onadaily")
 
 
 class BaseLoginStrategy(abc.ABC):
-    def login(self, driver: Webdriverwrapper, site: Site) -> None:
-        self.get_login_url(driver, site)
+    def login(self, driver: WebDriverWrapper, site: Site) -> None:
+        self._get_login_url(driver, site)
         if driver.check_logined(site):
             logger.debug(f"{site.name} 로그인 이미 되어있음")
             return
@@ -26,14 +36,14 @@ class BaseLoginStrategy(abc.ABC):
         self._final_login(driver, site)
 
     @handle_selenium_error(LoginFailedError, "로그인 url 열기 실패")
-    def get_login_url(self, driver: Webdriverwrapper, site: Site) -> None:
+    def _get_login_url(self, driver: WebDriverWrapper, site: Site) -> None:
         driver.get(site.login_url)
 
-    def _prepare_login(self, driver: Webdriverwrapper, site: Site) -> None:
+    def _prepare_login(self, driver: WebDriverWrapper, site: Site) -> None:
         pass
 
     @handle_selenium_error(LoginFailedError, "ID/Password 입력 실패")
-    def _enter_id_password(self, driver: Webdriverwrapper, site: Site) -> None:
+    def _enter_id_password(self, driver: WebDriverWrapper, site: Site) -> None:
         if site.login == "default":
             idform = driver.wait_move_click(site.input_id)
             driver.cleartextarea(idform)
@@ -45,14 +55,17 @@ class BaseLoginStrategy(abc.ABC):
             assert site.password is not None
             pwdform.send_keys(site.password)  # write id and password
 
+            logger.debug("id/password 입력 완료")
+
     @handle_selenium_error(LoginFailedError, "로그인 버튼 클릭 실패")
-    def _click_login_button(self, driver: Webdriverwrapper, site: Site) -> None:
+    def _click_login_button(self, driver: WebDriverWrapper, site: Site) -> None:
         if site.btn_login is None:
             raise LoginFailedError(f"로그인 버튼 클릭 실패/{site.name}에서 지원하지 않는 로그인 방식입니다.")
         driver.wait_move_click(site.btn_login)
 
     @handle_selenium_error(LoginFailedError, "로그인 확인 실패")
-    def _final_login(self, driver: Webdriverwrapper, site: Site) -> None:
+    def _final_login(self, driver: WebDriverWrapper, site: Site) -> None:
+        logger.debug(f"{site.name} 로그인 확인")
         driver.wait_login(site)
 
 
@@ -65,16 +78,18 @@ class BananaLoginStrategy(BaseLoginStrategy):
         self.main_window_handle = ""
 
     @handle_selenium_error(LoginFailedError, "바나나 로그인 중 실패")
-    def _prepare_login(self, driver: Webdriverwrapper, site: Site) -> None:
+    def _prepare_login(self, driver: WebDriverWrapper, site: Site) -> None:
         super()._prepare_login(driver, site)
 
         self.main_window_handle = driver.current_window_handle
+        logger.debug(f"현재 window 핸들 : {self.main_window_handle}")
         driver.wait_move_click(BNA_LOGIN_WND_XPATH)
 
         another_window = list(set(driver.window_handles) - {driver.current_window_handle})[0]
+        logger.debug(f"로그인 창 핸들 : {another_window}")
         driver.switch_to.window(another_window)
 
-    def _final_login(self, driver: Webdriverwrapper, site: Site) -> None:
+    def _final_login(self, driver: WebDriverWrapper, site: Site) -> None:
         driver.switch_to.window(self.main_window_handle)
         return super()._final_login(driver, site)
 
@@ -87,7 +102,7 @@ def get_login_strategy(site: Site) -> BaseLoginStrategy:
 
 
 class BaseStampStrategy(abc.ABC):
-    def stamp(self, driver: Webdriverwrapper, site: Site):
+    def stamp(self, driver: WebDriverWrapper, site: Site):
         self._prepare_stamp(driver, site)
         calendar_page = self._get_calendar_source(driver, site)
 
@@ -101,23 +116,23 @@ class BaseStampStrategy(abc.ABC):
         alert = self._get_alert(driver, site)
         self._handle_alert(alert)
 
-    def _prepare_stamp(self, driver: Webdriverwrapper, site: Site) -> None:
+    def _prepare_stamp(self, driver: WebDriverWrapper, site: Site) -> None:
         driver.get(site.stamp_url)
 
     @handle_selenium_error(StampFailedError, "달력 가져오기 실패")
-    def _get_calendar_source(self, driver: Webdriverwrapper, site: Site) -> str:
+    def _get_calendar_source(self, driver: WebDriverWrapper, site: Site) -> str:
         driver.wait_for_selector(site.stamp_calendar)
         return driver.page_source
 
     @handle_selenium_error(StampFailedError, "출첵 버튼 클릭 실패")
-    def _click_stamp_button(self, driver: Webdriverwrapper, site: Site):
+    def _click_stamp_button(self, driver: WebDriverWrapper, site: Site):
         if site.name == "onami":
             sleep(1)
 
         driver.wait_move_click(site.btn_stamp)
 
     @handle_selenium_error(StampFailedError, "얼럿 찾기 실패")
-    def _get_alert(self, driver: Webdriverwrapper, site: Site) -> Alert:
+    def _get_alert(self, driver: WebDriverWrapper, site: Site) -> Alert:
         driver.wait_for_alert()
         alert = driver.switch_to.alert
 
@@ -149,3 +164,114 @@ def get_stamp_strategy(site: Site) -> BaseStampStrategy:
         return BananaStampStrategy()
     else:
         return DefaultStampStrategy()
+
+
+class BaseHotDealStrategy(abc.ABC):
+    def get_hotdeal_info(self, driver: WebDriverWrapper, site: Site) -> SaleTable:
+        soup = self._get_soup(driver)
+
+        table = self._get_hotdeal_table(soup, site)
+
+        products = self._get_product_list(table)
+
+        hotdeallist = self._foreach_products(products)
+
+        resulttable = SaleTable(site)
+        resulttable.field_names = ["품명", "정상가", "할인가"]
+        resulttable.add_rows([x.to_row() for x in hotdeallist])
+        return resulttable
+
+    def _get_soup(self, driver: WebDriverWrapper) -> BeautifulSoup:
+        return BeautifulSoup(driver.page_source, "html.parser")
+
+    def _get_hotdeal_table(self, soup: BeautifulSoup, site: Site) -> Tag:
+        if site.hotdeal_table is None:
+            raise HotDealTableParseError("잘못된 사이트 설정")
+        table = soup.select_one(site.hotdeal_table)
+
+        if table is None:
+            raise HotDealDataNotFoundError("핫딜 테이블 찾을 수 없음")
+
+        return table
+
+    def _get_product_list(self, table: Tag) -> Iterable[Tag]:
+        if (div := table.select_one("div")) is None:
+            raise HotDealDataNotFoundError("핫딜 테이블에 상품이 없음")
+
+        products = div.find_all("div", recursive=False)
+
+        if len(products) == 0:
+            raise HotDealDataNotFoundError("핫딜 테이블에 상품이 없음")
+
+        result = [
+            list(x.children)[1]
+            for x in products
+            if x.has_attr("data-swiper-slide-index") and "swiper-slide-duplicate" not in x["class"]
+        ]
+        return result
+
+    def _foreach_products(self, products: Iterable[Tag]) -> list[HotdealInfo]:
+        hotdealinfolist = []
+        for product in products:
+            try:
+                info = self._get_product_info(product)
+            except HotDealDataNotFoundError:
+                logger.debug("핫딜 파싱 중 상품이 없음")
+                continue
+
+            hotdealinfolist.append(info)
+
+        return hotdealinfolist
+
+    @abc.abstractmethod
+    def _get_product_info(self, product: Tag) -> HotdealInfo:
+        pass
+
+
+class OnamiHotDealStrategy(BaseHotDealStrategy):
+    def _get_product_info(self, product: Tag) -> HotdealInfo:
+        price = dc_price = name = "이게 보이면 오류"
+
+        if (dcpricespan := product.select_one("p.price > span")) is None:
+            raise HotDealDataNotFoundError("핫딜 테이블에 상품이 없음")
+        dc_price = dcpricespan.text
+
+        if (pricestrike := product.select_one("strike")) is None:
+            raise HotDealDataNotFoundError("핫딜 테이블에 상품이 없음")
+
+        price = pricestrike.text
+
+        if (namep := product.select_one("p.name")) is None:
+            raise HotDealDataNotFoundError("핫딜 테이블에 상품이 없음")
+
+        name = namep.text
+
+        return HotdealInfo(name, price, dc_price)
+
+
+class ShowDangHotDealStrategy(BaseHotDealStrategy):
+    def _get_product_info(self, product: Tag) -> HotdealInfo:
+        price = dc_price = name = "이게 보이면 오류"
+
+        if (price_span := product.select_one("span.or-price")) is None:
+            raise HotDealDataNotFoundError("핫딜 테이블에 상품이 없음")
+        price = price_span.text
+
+        if (dc_price_span := product.select_one("span.sl-price")) is None:
+            raise HotDealDataNotFoundError("핫딜 테이블에 상품이 없음")
+        dc_price = dc_price_span.text
+
+        if (name_ul := product.select_one("ul.swiper-prd-info-name")) is None:
+            raise HotDealDataNotFoundError("핫딜 테이블에 상품이 없음")
+        name = name_ul.text
+
+        return HotdealInfo(name, price, dc_price)
+
+
+def get_hotdeal_strategy(site: Site) -> BaseHotDealStrategy:
+    if site.name == "onami":
+        return OnamiHotDealStrategy()
+    elif site.name == "showdang":
+        return ShowDangHotDealStrategy()
+    else:
+        raise HotDealTableParseError(f"{site.name} 핫딜 테이블 파싱 지원 안됨")

@@ -9,15 +9,14 @@ from selenium.webdriver.remote.webelement import WebElement
 from selenium.webdriver.support import expected_conditions as EC  # noqa
 from selenium.webdriver.support.ui import WebDriverWait
 
-from config import Options, Site
+from config import Site
 
 
-class Webdriverwrapper(uc.Chrome):
-    def __init__(self, chromeoptions: uc.ChromeOptions) -> None:
+class WebDriverWrapper(uc.Chrome):
+    def __init__(self, chromeoptions: uc.ChromeOptions, waittime: int) -> None:
         self._quited = True
-        self.options = Options()
         super().__init__(options=chromeoptions)
-        self.wait = WebDriverWait(self, self.options.common.waittime)
+        self.wait = WebDriverWait(self, waittime)
         self._quited = False
 
     def wait_for(self, xpath: str) -> WebElement:

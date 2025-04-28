@@ -1,4 +1,5 @@
 import functools
+import logging
 import os
 import sys
 import traceback
@@ -18,10 +19,11 @@ from selenium.common import (
     WebDriverException,
 )
 
-from classes import HotdealInfo, ParseError
-from config import Site
-from saletable import SaleTable
-from webdriverwrapper import Webdriverwrapper
+from config import DEBUG_MODE, Site
+from errors import ParseError
+from webdriverwrapper import WebDriverWrapper
+
+logger = logging.getLogger("onadaily")
 
 
 def check_already_stamp(site: Site, source: str) -> bool:
@@ -32,6 +34,8 @@ def check_already_stamp(site: Site, source: str) -> bool:
         raise ParseError("오류 : 달력을 찾을 수 없습니다.")
 
     week, day = num_of_month_week()
+
+    logger.debug(f"주차 : {week}, 요일 : {day}")
 
     weekssoup = tablesoup.find_all(True, recursive=False)
     weeksoup = weekssoup[week - 1].find_all(True, recursive=False)
@@ -90,60 +94,24 @@ def get_chrome_options(reqdatadir=False, datadir="", profile="", headless=False)
     return chromeoptions
 
 
-def gethotdealinfo(page_source: str, site: Site) -> SaleTable | None:
-    soup = BeautifulSoup(page_source, "html.parser")
-
-    if site.hotdeal_table is None:
-        raise ParseError("잘못된 사이트 핫딜 파싱 시도함")
-    table = soup.select_one(site.hotdeal_table)
-
-    if table is None:
-        print("핫딜 테이블 찾을 수 없음")
-        return None
-
-    div = table.select_one("div")
-
-    if div is None:
-        print("핫딜 테이블 찾을 수 없음")
-        return None
-
-    products_all = div.find_all("div", recursive=False)
-    products = []
-    for p in products_all:
-        if p.has_attr("data-swiper-slide-index") and "swiper-slide-duplicate" not in p["class"]:
-            productsoup = list(p.children)[1]
-
-            price = dc_price = name = "이게 보이면 오류"
-            if site.name == "onami":
-                dc_price = productsoup.find("p", "price").find("span").text
-                price = productsoup.find("strike").text
-                name = productsoup.find("p", "name").text
-
-            elif site.name == "showdang":
-                price = productsoup.find("span", "or-price").text
-                dc_price = productsoup.find("span", "sl-price").text
-                name = productsoup.find("ul", "swiper-prd-info-name").text
-
-            products.append(HotdealInfo(name, price, dc_price))
-
-    resulttable = SaleTable(site)
-    resulttable.field_names = ["품명", "정상가", "할인가"]
-    resulttable.add_rows([x.to_row() for x in products])
-    return resulttable
-
-
 if getattr(sys, "frozen", False):
     app_path = os.path.dirname(sys.executable)
 else:
     app_path = os.path.dirname(os.path.abspath(__file__))
 
-LOG_DIR = app_path
+LOG_DIR = os.path.join(app_path, "logs")
+if not os.path.exists(LOG_DIR):
+    os.makedirs(LOG_DIR)
 
 
 class LoggingInfo:
-    def __init__(self, exception: Exception, site: Site | None = None, driver: Webdriverwrapper | None = None) -> None:
+    def __init__(self, exception: Exception, site: Site | None = None, driver: WebDriverWrapper | None = None) -> None:
         self.now = datetime.now()
         self.stacktrace = traceback.format_exc()
+
+        if DEBUG_MODE:
+            print(self.stacktrace)
+
         self.message = str(exception)
 
         if site is not None:

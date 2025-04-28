@@ -133,3 +133,4 @@ testmode.py
 test.yaml
 .vscode/
 tests.py
+logs/

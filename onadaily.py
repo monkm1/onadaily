@@ -2,24 +2,14 @@ import logging
 
 from prettytable import PrettyTable
 
-from classes import AlreadyStamped, LoginFailedError, StampFailedError
+from classes import StampResult
 from config import Options, Site
-from strategies import get_login_strategy, get_stamp_strategy
-from utils import LoggingInfo, get_chrome_options, gethotdealinfo, save_log_error
-from webdriverwrapper import Webdriverwrapper
+from errors import AlreadyStamped, HotDealDataNotFoundError, LoginFailedError, StampFailedError
+from strategies import get_hotdeal_strategy, get_login_strategy, get_stamp_strategy
+from utils import LoggingInfo, get_chrome_options, save_log_error
+from webdriverwrapper import WebDriverWrapper
 
 logger = logging.getLogger("onadaily")
-
-
-class StampResult(object):
-    def __init__(self, site: Site) -> None:
-        self.site = site
-        self.passed = False
-        self.iserror = False
-        self.message = ""
-
-    def __bool__(self) -> bool:
-        return self.passed
 
 
 class Onadaily(object):
@@ -34,19 +24,38 @@ class Onadaily(object):
 
         self.last_exceptions: dict[Site, LoggingInfo] = {}
 
-    def initdriver(self) -> Webdriverwrapper:
-        driver = Webdriverwrapper(
+    def initdriver(self) -> WebDriverWrapper:
+        driver = WebDriverWrapper(
             get_chrome_options(
                 self.options.datadir_required(),
                 self.options.common.datadir,
                 self.options.common.profile,
                 self.options.common.headless,
-            )
+            ),
+            self.options.common.waittime,
         )
 
         return driver
 
-    def check(self, driver: Webdriverwrapper, site: Site) -> StampResult:
+    def showhotdeal(self, driver: WebDriverWrapper, site: Site) -> None:
+        if self.options.common.showhotdeal and site.hotdeal_table is not None:  # 핫딜 테이블 불러오기
+            try:
+                hotdeal_strategy = get_hotdeal_strategy(site)
+                table = hotdeal_strategy.get_hotdeal_info(driver, site)
+            except HotDealDataNotFoundError as e:
+                logger.debug(f"핫딜 테이블 파싱 실패 : {e}")
+                print("핫딜 테이블을 찾지 못했습니다.")
+                return
+
+            if len(table) > 0:
+                print(table)
+
+                if len(self.options.common.keywordnoti) > 0:  # 키워드 알람 설정됨
+                    keywordproducts = table.keywordcheck(self.options.common.keywordnoti)
+                    if len(keywordproducts) > 0:
+                        self.keywordnoti.add_rows(keywordproducts)
+
+    def check(self, driver: WebDriverWrapper, site: Site) -> StampResult:
         result = StampResult(site)
         try:
             print(f"== {site.name} ==")
@@ -61,15 +70,7 @@ class Onadaily(object):
             login_strategy.login(driver, site)
             print("로그인 성공")
 
-            if self.options.common.showhotdeal and site.hotdeal_table is not None:  # 핫딜 테이블 불러오기
-                table = gethotdealinfo(driver.page_source, site)
-                if table is not None:
-                    print(table)
-
-                    if len(self.options.common.keywordnoti) > 0:
-                        keywordproducts = table.keywordcheck(self.options.common.keywordnoti)
-                        if len(keywordproducts) > 0:
-                            self.keywordnoti.add_rows(keywordproducts)
+            self.showhotdeal(driver, site)
 
             stamp_strategy = get_stamp_strategy(site)
             stamp_strategy.stamp(driver, site)
@@ -125,7 +126,7 @@ class Onadaily(object):
             print("===============")
             print(f"❌ 재시도 {max_retries}번 실패")
             failedsites = [result.site for result in self.passed.values() if not result.passed]
-            print(f"실패한 사이트 : {str(failedsites)}")
+            print(f"실패한 사이트 : {[str(site) for site in failedsites]}")
 
             for failedsite in failedsites:
                 if failedsite in self.last_exceptions:

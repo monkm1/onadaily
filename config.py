@@ -1,3 +1,4 @@
+import logging
 import shutil
 import sys
 from os import path
@@ -9,11 +10,17 @@ import yaml
 from keyring.errors import PasswordDeleteError
 
 import consts
-from classes import ConfigError
+from errors import ConfigError
+
+logger = logging.getLogger("onadaily")
+DEBUG_MODE = False
+
+if len(sys.argv) > 1 and sys.argv[1] == "test":
+    DEBUG_MODE = True
 
 
 class Options(object):
-    _instance: "Options" | None = None
+    _instance: Optional["Options"] = None
     _initialized: bool
 
     def __new__(cls, *args, **kwargs):
@@ -24,12 +31,14 @@ class Options(object):
     def __init__(self) -> None:
         if hasattr(self, "_initialized") and self._initialized:
             return
+        logger.debug("Options 초기화")
+
         self._initialized = True
+        self._file_loaded = False
 
         self.common = _Common(self)
         self.sites = [Site(site_name, self) for site_name in consts.SITE_NAMES]
         self._settings: Dict[str, Dict[str, Any]] = {}
-        self._file_loaded = False
 
         self.load_settings()
 
@@ -44,7 +53,7 @@ class Options(object):
         return self._settings[section][option]
 
     def load_settings(self) -> None:
-        if len(sys.argv) > 1 and sys.argv[1] == "test":  # test mode
+        if DEBUG_MODE:  # test mode
             consts.SETTING_FILE_NAME = "test.yaml"  # noqa
 
         if not path.isfile(consts.SETTING_FILE_NAME):
@@ -102,7 +111,7 @@ class Options(object):
 
         for sitename in consts.SITE_NAMES:
             if sitename not in self._settings:
-                self._settings[sitename] = default_section.copy()
+                self._settings[sitename] = default_section.copy()  # 얕은 복사
                 self._settings["common"]["order"].append(sitename)
 
         if self.datadir_required():
@@ -127,11 +136,6 @@ class Options(object):
                 raise ConfigError("설정 파일의 order 항목에 사이트 철자가 틀렸습니다.")
 
         self.save_yaml()
-
-    def __getattr__(self, __name: str) -> Any:
-        if not self._file_loaded:
-            raise ConfigError("설정 파일이 로드되지 않음")
-        super().__getattribute__(__name)
 
     def save_yaml(self) -> None:
         with open(consts.SETTING_FILE_NAME, "w", encoding="utf8") as f:
