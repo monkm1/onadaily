@@ -25,6 +25,7 @@ logger = logging.getLogger("onadaily")
 
 class BaseLoginStrategy(abc.ABC):
     def login(self, driver: WebDriverWrapper, site: Site) -> None:
+        logger.debug(f"{site.name} 로그인 시작 URL : {site.login_url}")
         self._get_login_url(driver, site)
         if driver.check_logined(site):
             logger.debug(f"{site.name} 로그인 이미 되어있음")

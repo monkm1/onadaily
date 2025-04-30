@@ -1,3 +1,4 @@
+import os
 from typing import Self
 from urllib.parse import urlsplit, urlunsplit
 
@@ -13,9 +14,14 @@ from config import Site
 
 
 class WebDriverWrapper(uc.Chrome):
-    def __init__(self, chromeoptions: uc.ChromeOptions, waittime: int) -> None:
+    def __init__(self, chromeoptions: uc.ChromeOptions, waittime: int, usedatadir: bool = False) -> None:
         self._quited = True
-        super().__init__(options=chromeoptions)
+        if usedatadir:
+            datadir = os.path.abspath("./userdata")
+        else:
+            datadir = None
+
+        super().__init__(options=chromeoptions, user_data_dir=datadir, debug=True)
         self.wait = WebDriverWait(self, waittime)
         self._quited = False
 
@@ -56,7 +62,7 @@ class WebDriverWrapper(uc.Chrome):
     def wait_move_click(self, xpath: str) -> WebElement:
         element = self.wait_for(xpath)
         self.move_to(element)
-        self.execute_script("arguments[0].click()", element)
+        self.execute_script("arguments[0].click();", element)
         return element
 
     def find_xpath(self, xpath: str) -> list[WebElement]:

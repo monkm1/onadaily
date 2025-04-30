@@ -5,7 +5,6 @@ import sys
 import traceback
 from datetime import datetime
 from math import ceil
-from os import path
 from typing import Any, Callable, Type
 
 import pytz
@@ -71,13 +70,17 @@ def num_of_month_week() -> tuple[int, int]:
     return weeknum, dayofweeknum
 
 
-def get_chrome_options(reqdatadir=False, datadir="", profile="", headless=False) -> uc.ChromeOptions:
+def get_chrome_options(headless=False) -> uc.ChromeOptions:
     chromeoptions = uc.ChromeOptions()
     useragent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"  # noqa
     chromeoptions.add_argument(f"--user-agent={useragent}")
     chromeoptions.add_argument("--disable-extensions")
     chromeoptions.add_argument("--log-level=3")
     chromeoptions.add_argument("--disable-popup-blocking")
+
+    # chromeoptions.add_argument("--disable-dev-shm-usage")
+
+    # chromeoptions.add_argument("--remote-debugging-port=9222")
 
     if headless:
         chromeoptions.add_argument("--disable-gpu")
@@ -86,10 +89,6 @@ def get_chrome_options(reqdatadir=False, datadir="", profile="", headless=False)
         chromeoptions.add_argument("--no-sandbox")
         chromeoptions.add_argument("--start-maximized")
         chromeoptions.add_argument("--disable-setuid-sandbox")
-    if reqdatadir:
-        datadir = path.expandvars(datadir)
-        chromeoptions.add_argument(f"--user-data-dir={datadir}")
-        chromeoptions.add_argument(f"--profile-directory={profile}")
 
     return chromeoptions
 

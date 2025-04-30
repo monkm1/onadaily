@@ -27,6 +27,8 @@ if __name__ == "__main__":
         logger.exception(f"설정 파일 오류 : {e}\n")
     except YAMLError as e:
         logger.exception(f"설정 파일 분석 중 오류 발생 : {e}\n")
+    except Exception as e:
+        logger.exception(f"예상치 못한 오류 발생 : {e}\n")
 
     finally:
         if options.common.entertoquit:

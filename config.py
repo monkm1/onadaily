@@ -85,8 +85,6 @@ class Options(object):
         default_section = {"enable": False, "login": "default", "id": None, "password": None}
 
         default_common = {
-            "datadir": None,
-            "profile": None,
             "entertoquit": True,
             "waittime": 5,
             "showhotdeal": False,
@@ -117,8 +115,6 @@ class Options(object):
         if self.datadir_required():
             if self._settings["common"]["headless"]:
                 raise ConfigError("소셜 로그인과 headless 모드를 같이 사용할 수 없습니다.")
-            if self._getoption("common", "datadir") is None or self._getoption("common", "profile") is None:
-                raise ConfigError("소셜 로그인을 사용하려면 설정 파일의 datadir, profile을 지정해 주세요.")
 
         for site in self.sites:
             if site.enable is True:
@@ -143,8 +139,6 @@ class Options(object):
 
 
 class _Common(object):
-    datadir: Optional[str]
-    profile: Optional[str]
     entertoquit: bool
     waittime: int
     showhotdeal: bool
