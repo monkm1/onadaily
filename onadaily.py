@@ -28,6 +28,7 @@ class Onadaily(object):
         driver = WebDriverWrapper(
             get_chrome_options(self.options.common.headless),
             self.options.common.waittime,
+            self.options.datadir_required(),
         )
 
         return driver
