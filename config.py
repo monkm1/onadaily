@@ -204,7 +204,11 @@ class Site(object):
         if __name == "id":
             if self._options._getoption(self.name, "id") != "saved" or self.get_credential("id") is None:
                 while True:
-                    id = input(f"{self.name} 의 아이디 입력 :")
+                    id = input(f"{self.name} 의 아이디 입력(한영키 주의) :")
+
+                    if not id.isascii():
+                        print("🚨 잘못된 문자가 들어있습니다. 한영키를 확인하세요.")
+                        continue
 
                     if not id or id.isspace():
                         print("🚨 아이디를 입력해 주세요.")
@@ -219,7 +223,11 @@ class Site(object):
         elif __name == "password":
             if self._options._getoption(self.name, "password") != "saved" or self.get_credential("password") is None:
                 while True:
-                    password1 = pwinput.pwinput(prompt=f"{self.name}의 비밀번호 입력 :")
+                    password1 = pwinput.pwinput(prompt=f"{self.name}의 비밀번호 입력(한영키 주의) :")
+
+                    if not password1.isascii():
+                        print("🚨 잘못된 문자가 들어있습니다. 한영키를 확인하세요.")
+                        continue
 
                     if not password1 or password1.isspace():
                         print("🚨 패스워드를 입력해 주세요.")
