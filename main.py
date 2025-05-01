@@ -31,5 +31,5 @@ if __name__ == "__main__":
         logger.exception(f"예상치 못한 오류 발생 : {e}\n")
 
     finally:
-        if options.common.entertoquit:
+        if options is not None and options.common.entertoquit:
             input("종료하려면 Enter를 누르세요...")

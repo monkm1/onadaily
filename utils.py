@@ -167,9 +167,7 @@ def handle_selenium_error(wrap_exception: Type[Exception], message_prefix: str):
             except NoAlertPresentException as ex:
                 raise wrap_exception(f"{message_prefix}/처리할 얼럿 없음") from ex
             except WebDriverException as ex:
-                raise wrap_exception(
-                    f"{message_prefix}/알 수 없는 셀레니움 에러\n소셜 로그인을 사용중이라면 열려있는 크롬을 모두 닫고 실행하세요."
-                ) from ex
+                raise wrap_exception(f"{message_prefix}/알 수 없는 셀레니움 에러") from ex
 
         return wrapper
 

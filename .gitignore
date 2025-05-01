@@ -134,3 +134,4 @@ test.yaml
 .vscode/
 tests.py
 logs/
+userdata/

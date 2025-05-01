@@ -14,9 +14,13 @@ from errors import ConfigError
 
 logger = logging.getLogger("onadaily")
 DEBUG_MODE = False
+DEBUG_MORE_INFO = False
 
 if len(sys.argv) > 1 and sys.argv[1] == "test":
     DEBUG_MODE = True
+
+if len(sys.argv) > 2 and sys.argv[2] == "more_info":
+    DEBUG_MORE_INFO = True
 
 
 class Options(object):
