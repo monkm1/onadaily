@@ -16,7 +16,8 @@
 * __아이디와 비밀번호는 프로그램 실행 중 입력합니다.__
 * 프로그램에서 입력한 아이디와 비밀번호는 OS의 암호화 저장소에 저장됩니다.
   * Windows의 경우, 자격 증명 관리자에 저장됩니다.
-* 아이디와 비밀번호를 다시 입력하려면, 설정 파일을 열고 각 사이트의 id, password 항목을 지우세요.
+* 아이디와 비밀번호를 다시 입력하려면, 설정 파일을 열고 각 사이트의 *id*, *password* 항목을 지우세요.
+* 설정 파일에 직접 입력하려면 *credential_storage*를 *lagacy*로 바꾸세요. (__권장하지 않습니다.__)
 
 #### 예시
 ```yaml
@@ -34,6 +35,9 @@ common:
   autoretry: true # true 이면 실패 시 자동으로 재시도합니다.
   retrytime: 3 # autoretry가 true 일 때 재시도하는 최대 횟수입니다.
   keywordnoti: [] # 특정 단어가 할인에 포함되어 있을때 알립니다. showhotdeal이 true 일때만 동작합니다. ex) keywordnoti: ["로션", "메이드"]
+  credential_storage: keyring
+  # 아이디/비밀번호 저장소입니다. keyring, lagacy 중 하나를 선택합니다. lagacy는 이 파일 각 사이트 id/pasword에 직접 입력합니다.
+  # 주의: lagacy는 보안이 취약합니다. keyring을 추천합니다.
 
 onami:
   enable: true
@@ -69,7 +73,9 @@ common:
   autoretry: true # true 이면 실패 시 자동으로 재시도합니다.
   retrytime: 3 # autoretry가 true 일 때 재시도하는 최대 횟수입니다.
   keywordnoti: [] # 특정 단어가 할인에 포함되어 있을때 알립니다. showhotdeal이 true 일때만 동작합니다. ex) keywordnoti: ["로션", "메이드"]
-
+  credential_storage: keyring
+  # 아이디/비밀번호 저장소입니다. keyring, lagacy 중 하나를 선택합니다. lagacy는 이 파일 각 사이트 id/pasword에 직접 입력합니다.
+  # 주의: lagacy는 보안이 취약합니다. keyring을 추천합니다.
 onami:
   enable: true
   login: kakao # 카카오 로그인 사용
@@ -96,7 +102,9 @@ common:
   autoretry: true # true 이면 실패 시 자동으로 재시도합니다.
   retrytime: 3 # autoretry가 true 일 때 재시도하는 최대 횟수입니다.
   keywordnoti: [] # 특정 단어가 할인에 포함되어 있을때 알립니다. showhotdeal이 true 일때만 동작합니다. ex) keywordnoti: ["로션", "메이드"]
-
+  credential_storage: keyring
+  # 아이디/비밀번호 저장소입니다. keyring, lagacy 중 하나를 선택합니다. lagacy는 이 파일 각 사이트 id/pasword에 직접 입력합니다.
+  # 주의: lagacy는 보안이 취약합니다. keyring을 추천합니다.
 
 onami:
   enable: true

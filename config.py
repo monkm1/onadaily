@@ -4,12 +4,11 @@ import sys
 from os import path
 from typing import Any, Dict, Optional, get_type_hints
 
-import keyring
-import pwinput  # type: ignore[import-untyped]
+# type: ignore[import-untyped]
 import yaml
-from keyring.errors import PasswordDeleteError
 
 import consts
+from credential_manager import get_credential, set_credential
 from errors import ConfigError
 
 logger = logging.getLogger("onadaily")
@@ -75,6 +74,11 @@ class Options(object):
         for sitename in order:
             self.common._order.append(self.getsite(sitename))
 
+        if self._settings["common"]["credential_storage"] == "lagacy":
+            print("⚠️주의: credential_storage가 lagacy로 설정되어 있습니다.")
+            print("아이디/비밀번호를 파일에 저장합니다. 보안에 주의하세요.")
+            print("암호화된 저장소에 저장하려면 credential_storage를 keyring으로 변경하세요.")
+
     def getsite(self, sitename: str) -> "Site":
         return [x for x in self.sites if x.name == sitename][0]
 
@@ -97,6 +101,7 @@ class Options(object):
             "autoretry": True,
             "retrytime": 3,
             "keywordnoti": [],
+            "credential_storage": "keyring",
         }
 
         common_type_hint = get_type_hints(_Common)
@@ -119,6 +124,10 @@ class Options(object):
         if self.datadir_required():
             if self._settings["common"]["headless"]:
                 raise ConfigError("소셜 로그인과 headless 모드를 같이 사용할 수 없습니다.")
+
+        if self._settings["common"]["credential_storage"] not in ["keyring", "lagacy"]:
+            logger.debug("잘못된 credential_storage 설정, 기본값 keyring으로 설정합니다.")
+            self._settings["common"]["credential_storage"] = "keyring"
 
         for site in self.sites:
             if site.enable is True:
@@ -150,6 +159,7 @@ class _Common(object):
     autoretry: bool
     retrytime: int
     keywordnoti: list[str]
+    credential_storage: str
 
     def __init__(self, options: Options) -> None:
         self._order: Optional[list["Site"]] = None
@@ -205,69 +215,24 @@ class Site(object):
         return consts.LOGIN[self.login][self.name]
 
     def __getattr__(self, __name: str) -> Any:
-        if __name == "id":
-            if self._options._getoption(self.name, "id") != "saved" or self.get_credential("id") is None:
-                while True:
-                    id = input(f"{self.name} 의 아이디 입력(한영키 주의) :")
+        if __name in ["id", "password"]:
+            if self._options._getoption("common", "credential_storage") == "lagacy":
+                return self._options._getoption(self.name, __name)
+            else:
+                if self._options._getoption(self.name, __name) != "saved":
+                    credential = set_credential(__name, self.name)
+                    self.save_credential_status(__name)
 
-                    if not id.isascii():
-                        print("🚨 잘못된 문자가 들어있습니다. 한영키를 확인하세요.")
-                        continue
+                else:
+                    credential = get_credential(__name, self.name)
 
-                    if not id or id.isspace():
-                        print("🚨 아이디를 입력해 주세요.")
-                        continue
+                return credential
+        else:
+            return self._options._getoption(self.name, __name)
 
-                    self.save_credential("id", id)
-                    print("✅ 아이디 저장 완료!")
-                    break
-
-            return self.get_credential("id")
-
-        elif __name == "password":
-            if self._options._getoption(self.name, "password") != "saved" or self.get_credential("password") is None:
-                while True:
-                    password1 = pwinput.pwinput(prompt=f"{self.name}의 비밀번호 입력(한영키 주의) :")
-
-                    if not password1.isascii():
-                        print("🚨 잘못된 문자가 들어있습니다. 한영키를 확인하세요.")
-                        continue
-
-                    if not password1 or password1.isspace():
-                        print("🚨 패스워드를 입력해 주세요.")
-                        continue
-
-                    password2 = pwinput.pwinput(prompt="다시 입력 :")
-
-                    if password1 == password2:
-                        self.save_credential("password", password1)
-                        print("✅ 비밀번호 확인 및 저장 완료!")
-                        break
-                    else:
-                        print("🚨 비밀번호가 일치하지 않습니다. 다시 입력해주세요.")
-
-            return self.get_credential("password")
-
-        return self._options._getoption(self.name, __name)
-
-    def save_credential(self, type: str, value: str) -> None:
-        if type not in ["id", "password"]:
-            raise ValueError("잘못된 type")
-
-        try:
-            keyring.delete_password(f"{self._serviceName}@{self.name}", type)
-        except PasswordDeleteError:
-            pass
-
-        keyring.set_password(f"{self._serviceName}@{self.name}", type, value)
-
+    def save_credential_status(self, type: str) -> None:
         self._options._settings[self.name][type] = "saved"
         self._options.save_yaml()
-
-    def get_credential(self, type: str) -> str | None:
-        if type not in ["id", "password"]:
-            raise ValueError("잘못된 type")
-        return keyring.get_password(f"{self._serviceName}@{self.name}", type)
 
     def __eq__(self, __value: object) -> bool:
         if not isinstance(__value, Site):
