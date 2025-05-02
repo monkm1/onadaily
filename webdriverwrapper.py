@@ -11,7 +11,8 @@ from selenium.webdriver.remote.webelement import WebElement
 from selenium.webdriver.support import expected_conditions as EC  # noqa
 from selenium.webdriver.support.ui import WebDriverWait
 
-from config import DEBUG_MORE_INFO, Site
+from config import Site
+from consts import DEBUG_MORE_INFO
 
 logger = logging.getLogger("onadaily.webdriverwrapper")
 

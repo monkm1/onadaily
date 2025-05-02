@@ -2,7 +2,8 @@ import logging
 
 from yaml import YAMLError
 
-from config import DEBUG_MODE, Options
+from config import Options
+from consts import DEBUG_MODE
 from errors import ConfigError
 from onadaily import Onadaily
 

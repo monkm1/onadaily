@@ -1,6 +1,5 @@
 import logging
 import shutil
-import sys
 from os import path
 from typing import Any, Dict, Optional, get_type_hints
 
@@ -12,14 +11,6 @@ from credential_manager import get_credential, set_credential
 from errors import ConfigError
 
 logger = logging.getLogger("onadaily")
-DEBUG_MODE = False
-DEBUG_MORE_INFO = False
-
-if len(sys.argv) > 1 and sys.argv[1] == "test":
-    DEBUG_MODE = True
-
-if len(sys.argv) > 2 and sys.argv[2] == "more_info":
-    DEBUG_MORE_INFO = True
 
 
 class Options(object):
@@ -56,13 +47,14 @@ class Options(object):
         return self._settings[section][option]
 
     def load_settings(self) -> None:
-        if DEBUG_MODE:  # test mode
-            consts.SETTING_FILE_NAME = "test.yaml"  # noqa
+        if consts.DEBUG_MODE:  # test mode
+            consts.CONFIG_FILE_NAME = "test.yaml"  # noqa
 
-        if not path.isfile(consts.SETTING_FILE_NAME):
-            shutil.copy("onadailyorigin.yaml", consts.SETTING_FILE_NAME)
+        if not path.isfile(consts.CONFIG_FILE_NAME):
+            print("설정 파일이 없습니다. 기본 설정 파일을 복사합니다.")
+            shutil.copy(consts.DEFAULT_CONFIG_FILE, consts.CONFIG_FILE_NAME)
 
-        with open(consts.SETTING_FILE_NAME, "r", encoding="utf-8") as f:  # load yaml
+        with open(consts.CONFIG_FILE_NAME, "r", encoding="utf-8") as f:  # load yaml
             self._settings = dict(yaml.safe_load(f))
 
         self._check_yaml_valid()
@@ -137,7 +129,7 @@ class Options(object):
 
         order = self._settings["common"]["order"]
 
-        if len(set(order)) != len(consts.SITES):
+        if len(set(order)) != len(consts.SITE_NAMES):
             raise ConfigError("설정 파일의 order 항목에 중복되거나 누락된 사이트가 있습니다.")
 
         for s in order:
@@ -147,7 +139,7 @@ class Options(object):
         self.save_yaml()
 
     def save_yaml(self) -> None:
-        with open(consts.SETTING_FILE_NAME, "w", encoding="utf8") as f:
+        with open(consts.CONFIG_FILE_NAME, "w", encoding="utf8") as f:
             yaml.dump(self._settings, f, sort_keys=False, allow_unicode=True)
 
 

@@ -18,7 +18,8 @@ from selenium.common import (
     WebDriverException,
 )
 
-from config import DEBUG_MODE, Site
+from config import Site
+from consts import DEBUG_MODE
 from errors import ParseError
 from webdriverwrapper import WebDriverWrapper
 
