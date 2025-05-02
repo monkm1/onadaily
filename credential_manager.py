@@ -10,20 +10,24 @@ PASSWORD = "password"
 logger = logging.getLogger("onadaily")
 
 
-def get_credential(type: str, site_name: str) -> str:
+def _get_namespace(site_name: str, namespace: str) -> str:
+    return f"{namespace}@{site_name}"
+
+
+def get_credential(type: str, site_name: str, namespace: str) -> str:
     if type not in [ID, PASSWORD]:
         raise ValueError("잘못된 type")
 
-    credential = keyring.get_password(f"Onadaily@{site_name}", type)
+    credential = keyring.get_password(f"{_get_namespace(site_name, namespace)}", type)
 
     if credential is None:
         logger.debug(f"{type} 없음, 새로 입력받음")
-        return set_credential(type, site_name)
+        return set_credential(type, site_name, namespace)
 
     return credential
 
 
-def set_credential(type: str, site_name: str) -> str:
+def set_credential(type: str, site_name: str, namespace: str) -> str:
     if type not in [ID, PASSWORD]:
         raise ValueError("잘못된 type")
 
@@ -46,7 +50,7 @@ def set_credential(type: str, site_name: str) -> str:
         logger.debug(f"{type} 재입력 : {credential2}")
 
         if credential == credential2:
-            _save_credential(type, site_name, credential)
+            _save_credential(type, site_name, namespace, credential)
             print(f"✅{type} 확인 및 저장 완료!")
             break
         else:
@@ -58,14 +62,14 @@ def set_credential(type: str, site_name: str) -> str:
     return credential
 
 
-def _save_credential(type: str, site_name: str, credential: str) -> None:
+def _save_credential(type: str, site_name: str, namespace: str, credential: str) -> None:
     if type not in [ID, PASSWORD]:
         raise ValueError("잘못된 type")
 
     try:
-        keyring.delete_password(f"Onadaily@{site_name}", type)
+        keyring.delete_password(f"{_get_namespace(site_name, namespace)}", type)
     except keyring.errors.PasswordDeleteError:
         pass
 
-    keyring.set_password(f"Onadaily@{site_name}", type, credential)
+    keyring.set_password(f"{_get_namespace(site_name, namespace)}", type, credential)
     logger.debug(f"{site_name} {type} 저장 완료: {credential}")

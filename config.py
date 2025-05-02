@@ -30,17 +30,13 @@ class Options(object):
         self._initialized = True
         self._file_loaded = False
 
-        self.common = _Common(self)
-        self.sites = [Site(site_name, self) for site_name in consts.SITE_NAMES]
         self._settings: Dict[str, Dict[str, Any]] = {}
-
         self.load_settings()
 
-    def _getoption(self, sitename: str, option: str) -> Any:
-        section = "common"
-        if sitename != "common":
-            section = sitename
+        self.sites = [Site(site_name, self) for site_name in consts.SITE_NAMES]
+        self.common = _Common(self)  # common에서 self.sites를 참조하기 때문에 self.sites를 먼저 초기화해야 함
 
+    def _getoption(self, section: str, option: str) -> Any:
         if section not in self._settings:
             raise ValueError("잘못된 옵션 접근")
 
@@ -61,24 +57,19 @@ class Options(object):
 
         self._file_loaded = True
 
-        order = self._getoption("common", "order")
-        self.common._order = []
-        for sitename in order:
-            self.common._order.append(self.getsite(sitename))
-
         if self._settings["common"]["credential_storage"] == "lagacy":
             print("⚠️주의: credential_storage가 lagacy로 설정되어 있습니다.")
             print("아이디/비밀번호를 파일에 저장합니다. 보안에 주의하세요.")
             print("암호화된 저장소에 저장하려면 credential_storage를 keyring으로 변경하세요.")
 
-    def getsite(self, sitename: str) -> "Site":
-        return [x for x in self.sites if x.name == sitename][0]
-
     def datadir_required(self) -> bool:
         checklist = []
-        for site in self.sites:
-            if site.enable is True:
-                checklist.append(site.login != "default")
+        for sitename, sitesettings in self._settings.items():
+            if sitename == "common":
+                continue
+
+            if sitesettings["enable"] is True:
+                checklist.append(sitesettings["login"] != "default")
         return any(checklist)
 
     def _check_yaml_valid(self) -> None:
@@ -94,6 +85,7 @@ class Options(object):
             "retrytime": 3,
             "keywordnoti": [],
             "credential_storage": "keyring",
+            "namespace": "Onadaily",
         }
 
         common_type_hint = get_type_hints(_Common)
@@ -101,31 +93,34 @@ class Options(object):
         if len(common_type_hint) + 1 != len(default_common):
             raise ValueError("타입 힌트 수정해야 함")
 
-        if "common" not in self._settings:
+        if "common" not in self._settings:  # common 섹션이 없으면 추가
             self._settings["common"] = {}
 
-        for k, v in default_common.items():
+        for k, v in default_common.items():  # 기본 common 섹션에서 없는 항목 추가
             if k not in self._settings["common"]:
                 self._settings["common"][k] = v
 
         for sitename in consts.SITE_NAMES:
-            if sitename not in self._settings:
+            if sitename not in self._settings:  # 사이트 섹션이 없으면 추가
                 self._settings[sitename] = default_section.copy()  # 얕은 복사
-                self._settings["common"]["order"].append(sitename)
+                self._settings["common"]["order"].append(sitename)  # 사이트 섹션 추가 시 order에 추가
 
         if self.datadir_required():
             if self._settings["common"]["headless"]:
                 raise ConfigError("소셜 로그인과 headless 모드를 같이 사용할 수 없습니다.")
 
         if self._settings["common"]["credential_storage"] not in ["keyring", "lagacy"]:
-            logger.debug("잘못된 credential_storage 설정, 기본값 keyring으로 설정합니다.")
+            print("잘못된 credential_storage 설정, 기본값 keyring으로 설정합니다.")
             self._settings["common"]["credential_storage"] = "keyring"
 
-        for site in self.sites:
-            if site.enable is True:
-                login = site.login
-                if site.btn_login is None:
-                    raise ConfigError(f"{site.name}의 {login} 로그인은 지원하지 않습니다.")
+        for sitename, sitesettings in self._settings.items():
+            if sitename == "common":
+                continue
+
+            if sitesettings["enable"] is True:
+                login = sitesettings["login"]
+                if consts.LOGIN[login][sitename] is None:
+                    raise ConfigError(f"{sitename}의 {login} 로그인은 지원하지 않습니다.")
 
         order = self._settings["common"]["order"]
 
@@ -152,10 +147,15 @@ class _Common(object):
     retrytime: int
     keywordnoti: list[str]
     credential_storage: str
+    namespace: str
 
     def __init__(self, options: Options) -> None:
-        self._order: Optional[list["Site"]] = None
+        self._order: list["Site"] = []
         self._options = options
+        for ordername in options._settings["common"]["order"]:
+            for site in options.sites:
+                if site.name == ordername:
+                    self._order.append(site)
 
     def __getattr__(self, key: str) -> Any:
         if key == "entertoquit":
@@ -200,23 +200,21 @@ class Site(object):
         self.hotdeal_table = consts.HOTDEAL_TABLE[self.name]
         self.stamp_calendar = consts.STAMP_CALENDAR[self.name]
 
-        self._serviceName = "Onadaily"
-
     @property
     def btn_login(self) -> str | None:
         return consts.LOGIN[self.login][self.name]
 
     def __getattr__(self, __name: str) -> Any:
         if __name in ["id", "password"]:
-            if self._options._getoption("common", "credential_storage") == "lagacy":
+            if self._options.common.credential_storage == "lagacy":
                 return self._options._getoption(self.name, __name)
             else:
                 if self._options._getoption(self.name, __name) != "saved":
-                    credential = set_credential(__name, self.name)
+                    credential = set_credential(__name, self.name, self._options.common.namespace)
                     self.save_credential_status(__name)
 
                 else:
-                    credential = get_credential(__name, self.name)
+                    credential = get_credential(__name, self.name, self._options.common.namespace)
 
                 return credential
         else:

@@ -8,7 +8,7 @@ from errors import ConfigError
 from onadaily import Onadaily
 
 if __name__ == "__main__":
-
+    options = None
     try:
         logger = logging.getLogger("onadaily")
         if DEBUG_MODE:
@@ -32,5 +32,5 @@ if __name__ == "__main__":
         logger.exception(f"예상치 못한 오류 발생 : {e}\n")
 
     finally:
-        if options is not None and options.common.entertoquit:
+        if options is None or options.common.entertoquit:
             input("종료하려면 Enter를 누르세요...")
