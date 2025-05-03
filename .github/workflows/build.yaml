@@ -28,7 +28,6 @@ jobs:
       - name: Build onefile
         run: |
           pipenv run pyinstaller --onefile main.py --name onadaily --add-data onadailyorigin.yaml:. -y
-          cp onadailyorigin.yaml dist/
           pipenv run pip-licenses > dist/depend-licenses.txt
           cp LICENSE dist/LICENSE.txt
           Compress-Archive .\dist\* onadaily-windows-onefile.zip
@@ -37,7 +36,6 @@ jobs:
       - name: Build
         run: |
           pipenv run pyinstaller main.py --name onadaily --add-data onadailyorigin.yaml:. -y
-          cp onadailyorigin.yaml dist/onadaily/
           pipenv run pip-licenses > dist/onadaily/depend-licenses.txt
           cp LICENSE dist/onadaily/LICENSE.txt
           Compress-Archive .\dist\onadaily\* onadaily-windows.zip
