@@ -27,7 +27,7 @@ jobs:
         shell: bash
       - name: Build onefile
         run: |
-          pipenv run pyinstaller --onefile main.py --name onadaily
+          pipenv run pyinstaller --onefile main.py --name onadaily --add-data onadailyorigin.yaml:. -y
           cp onadailyorigin.yaml dist/
           pipenv run pip-licenses > dist/depend-licenses.txt
           cp LICENSE dist/LICENSE.txt
@@ -36,7 +36,7 @@ jobs:
         shell: powershell
       - name: Build
         run: |
-          pipenv run pyinstaller main.py --name onadaily
+          pipenv run pyinstaller main.py --name onadaily --add-data onadailyorigin.yaml:. -y
           cp onadailyorigin.yaml dist/onadaily/
           pipenv run pip-licenses > dist/onadaily/depend-licenses.txt
           cp LICENSE dist/onadaily/LICENSE.txt
