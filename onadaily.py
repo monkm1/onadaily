@@ -49,7 +49,7 @@ class Onadaily(object):
                 if len(self.options.common.keywordnoti) > 0:  # 키워드 알람 설정됨
                     keywordproducts = table.keywordcheck(self.options.common.keywordnoti)
                     if len(keywordproducts) > 0:
-                        self.keywordnoti.add_rows(keywordproducts)
+                        self.keywordnoti.add_rows(keywordproducts, divider=True)
 
     def check(self, driver: WebDriverWrapper, site: Site) -> StampResult:
         result = StampResult(site)

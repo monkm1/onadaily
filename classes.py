@@ -1,3 +1,5 @@
+from typing import Iterable
+
 from prettytable import PrettyTable
 
 from config import Site
@@ -38,6 +40,7 @@ class SaleTable(PrettyTable):
     def __init__(self, site: Site) -> None:
         self.site = site
         super().__init__()
+        self.field_names = ["품명", "정상가", "할인가"]
 
     def keywordcheck(self, keywords) -> list:
         result = []
@@ -46,6 +49,12 @@ class SaleTable(PrettyTable):
                 if keyword in x[0]:
                     result.append([self.site.name] + x)
         return result
+
+    def add_product(self, product: HotdealInfo) -> None:
+        self.add_row(product.to_row())
+
+    def add_products(self, products: Iterable[HotdealInfo]) -> None:
+        self.add_rows([product.to_row() for product in products])
 
     def __len__(self) -> int:
         return len(self.rows)

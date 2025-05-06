@@ -178,8 +178,7 @@ class BaseHotDealStrategy(abc.ABC):
         hotdeallist = self._foreach_products(products)
 
         resulttable = SaleTable(site)
-        resulttable.field_names = ["품명", "정상가", "할인가"]
-        resulttable.add_rows([x.to_row() for x in hotdeallist])
+        resulttable.add_products(hotdeallist)
         return resulttable
 
     def _get_soup(self, driver: WebDriverWrapper) -> BeautifulSoup:
