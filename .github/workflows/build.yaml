@@ -10,11 +10,11 @@ jobs:
     runs-on: windows-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
       - name: Setup python
         uses: actions/setup-python@v5
         with:
-          python-version: 3.11
+          python-version: 3.13
           cache: 'pipenv'
       - name: Install pipenv
         run: |
@@ -25,20 +25,55 @@ jobs:
           pipenv run pip install pyinstaller
           pipenv run pip install pip-licenses
         shell: bash
-      - name: Build onefile
+      - name: Generate dependency licenses
         run: |
-          pipenv run pyinstaller --onefile main.py --name onadaily --add-data onadailyorigin.yaml:. -y
           pipenv run pip-licenses > dist/depend-licenses.txt
-          cp LICENSE dist/LICENSE.txt
-          Compress-Archive .\dist\* onadaily-windows-onefile.zip
-          ls
-        shell: powershell
-      - name: Build
+      - name: Build onefile and folder in parallel
         run: |
-          pipenv run pyinstaller main.py --name onadaily --add-data onadailyorigin.yaml:. -y
-          pipenv run pip-licenses > dist/onadaily/depend-licenses.txt
-          cp LICENSE dist/onadaily/LICENSE.txt
-          Compress-Archive .\dist\onadaily\* onadaily-windows.zip
+          $jobOnefile = Start-Job -ScriptBlock {
+            Write-Host "Building onefile..."
+            pipenv run pyinstaller --onefile main.py --name onadaily --add-data onadailyorigin.yaml:. -y
+            Write-Host "Building onefile done."
+          }
+          $jobFolder = Start-Job -ScriptBlock {
+            Write-Host "Building folder..."
+            pipenv run pyinstaller main.py --name onadaily --add-data onadailyorigin.yaml:. -y
+            Write-Host "Building folder done."
+          }
+          
+          echo "Waiting for jobs to finish..."
+          Wait-Job -Job $jobOnefile, $jobFolder | Out-Null
+
+          echo "Jobs finished."
+          Get-Job
+
+          $failedJobs = Get-Job | Where-Object { $_.State -ne 'Completed' }
+
+          if ($failedJobs) {
+            Write-Error "One or more jobs failed."
+            $failedJobs | ForEach-Object { Recieve-Job $_ }
+            exit 1
+          }
+        shell: powershell
+      - name: Onefile Compress
+        run: |
+          Copy-Item .\depend-licenses.txt .\dist\depend-licenses.txt
+          Copy-Item .\LICENSE .\dist\LICENSE
+          Copy-Item .\README.md .\dist\README.md
+
+          Compress-Archive -Path .\dist\onadaily.exe, .\dist\depend-licenses.txt, .\dist\LICENSE, .\dist\README.md -DestinationPath onadaily-windows-onefile.zip
+          ls *.zip
+        shell: powershell
+
+      - name: Folder Compress
+        run: |
+          Copy-Item .\depend-licenses.txt .\dist\onadaily\depend-licenses.txt
+          Copy-Item .\LICENSE .\dist\onadaily\LICENSE
+          Copy-Item .\README.md .\dist\onadaily\README.md
+
+          Compress-Archive -Path .\dist\onadaily\* -DestinationPath onadaily-windows.zip
+          ls *.zip
+        shell: powershell
       - name: Release check
         uses: kaisugi/action-regex-match@v1.0.1
         id: regex
@@ -47,7 +82,7 @@ jobs:
           regex: 'refs\/tags\/v\d+\.\d+\.\d+pre\d+'
 
       - name: Release pre-release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         if: ${{ steps.regex.outputs.match != '' }}
         with:
           body: "onadaily-windows-onefile.zip 은 하나로 압축시킨 파일입니다. 바이러스로 오진될 수 있습니다. 이 경우엔 onadaily-windows.zip을 사용하세요.\n이 버전은 베타 버전입니다. 오류가 발생할 수 있습니다."
