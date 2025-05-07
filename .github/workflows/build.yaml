@@ -8,92 +8,40 @@ on:
 jobs:
   windows:
     runs-on: windows-latest
-    env:
-      PIPENV_VENV_IN_PROJECT: "1"
     steps:
       - name: Checkout
         uses: actions/checkout@v4
       - name: Setup python
         uses: actions/setup-python@v5
         with:
-          python-version: 3.13
+          python-version: 3.11
           cache: 'pipenv'
       - name: Install pipenv
         run: |
           pip install pipenv
-          mkdir ./.venv
       - name: Install dependencies
         run: |
           pipenv install
           pipenv run pip install pyinstaller
           pipenv run pip install pip-licenses
         shell: powershell
+
       - name: Generate dependency licenses
+        run: pipenv run pip-licenses > depend-licenses.txt
+      - name: Build onefile
         run: |
-          pipenv run pip-licenses > depend-licenses.txt
-      - name: Build onefile and folder in parallel
-        run: |
+          pipenv run pyinstaller --onefile main.py --name onadaily --add-data onadailyorigin.yaml:. -y
+          cp depend-licenses.txt dist/depend-licenses.txt
+          cp LICENSE dist/LICENSE.txt
+          Compress-Archive .\dist\* onadaily-windows-onefile.zip
           ls
-
-          $VENV_PYINSTALLER_PATH = (Get-ChildItem -Path .\.venv\Scripts\pyinstaller.exe).FullName
-          $WORKING_DIR = (Get-Location).Path
-
-          $jobOnefile = Start-Job -ScriptBlock {
-            Write-Host "Building onefile..."
-            cd $using:WORKING_DIR
-            pwd
-            & $using:VENV_PYINSTALLER_PATH --onefile main.py --name onadaily --add-data onadailyorigin.yaml:. -y 2>&1
-            Write-Host "Building onefile done."
-          }
-          $jobFolder = Start-Job -ScriptBlock {
-            Write-Host "Building folder..."
-            cd $using:WORKING_DIR
-            pwd
-            & $using:VENV_PYINSTALLER_PATH main.py --name onadaily --add-data onadailyorigin.yaml:. -y 2>&1
-            Write-Host "Building folder done."
-          }
-          
-          echo "Waiting for jobs to finish..."
-          Wait-Job -Job $jobOnefile, $jobFolder | Out-Null
-
-          Get-Job | ForEach-Object {
-              Write-Host "--- Receiving output for Job ID: $($_.Id), Name: $($_.Name), State: $($_.State) ---"
-              Receive-Job -Job $_
-              Write-Host "--- End of output for Job ID: $($_.Id) ---"
-          }
-
-          echo "Jobs finished."
-          Get-Job
-
-          ls
-
-          $failedJobs = Get-Job | Where-Object { $_.State -ne 'Completed' }
-
-          if ($failedJobs) {
-            Write-Error "One or more jobs failed."
-            $failedJobs | ForEach-Object { Receive-Job $_ }
-            exit 1
-          }
         shell: powershell
-      - name: Onefile Compress
+      - name: Build
         run: |
-          Copy-Item .\depend-licenses.txt .\dist\depend-licenses.txt
-          Copy-Item .\LICENSE .\dist\LICENSE.txt
-          Copy-Item .\README.md .\dist\README.md
-
-          Compress-Archive -Path .\dist\onadaily.exe, .\dist\depend-licenses.txt, .\dist\LICENSE.txt, .\dist\README.md -DestinationPath onadaily-windows-onefile.zip
-          ls *.zip
-        shell: powershell
-
-      - name: Folder Compress
-        run: |
-          Copy-Item .\depend-licenses.txt .\dist\onadaily\depend-licenses.txt
-          Copy-Item .\LICENSE .\dist\onadaily\LICENSE.txt
-          Copy-Item .\README.md .\dist\onadaily\README.md
-
-          Compress-Archive -Path .\dist\onadaily\* -DestinationPath onadaily-windows.zip
-          ls *.zip
-        shell: powershell
+          pipenv run pyinstaller main.py --name onadaily --add-data onadailyorigin.yaml:. -y
+          cp depend-licenses.txt dist/onadaily/depend-licenses.txt
+          cp LICENSE dist/onadaily/LICENSE.txt
+          Compress-Archive .\dist\onadaily\* onadaily-windows.zip
       - name: Release check
         uses: kaisugi/action-regex-match@v1.0.1
         id: regex
