@@ -19,7 +19,7 @@ jobs:
       - name: Install pipenv
         run: |
           pip install pipenv
-          $env:PIPENV_VENV_IN_PROJECT=1
+          mkdir ./.venv
       - name: Install dependencies
         run: |
           pipenv install
