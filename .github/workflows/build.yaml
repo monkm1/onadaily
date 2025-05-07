@@ -27,7 +27,7 @@ jobs:
         shell: bash
       - name: Generate dependency licenses
         run: |
-          pipenv run pip-licenses > dist/depend-licenses.txt
+          pipenv run pip-licenses > depend-licenses.txt
       - name: Build onefile and folder in parallel
         run: |
           $jobOnefile = Start-Job -ScriptBlock {
