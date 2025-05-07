@@ -9,7 +9,7 @@ from selenium.webdriver.common.alert import Alert
 
 from classes import HotdealInfo, SaleTable
 from config import Site
-from consts import BNA_LOGIN_WND_XPATH, SHOWDANG_GOOGLE_SELECT_USER_1
+from consts import BNA_LOGIN_WND_XPATH, SHOWDANG_GOOGLE_LOGIN_CONTINUE, SHOWDANG_GOOGLE_SELECT_USER_1
 from errors import (
     AlreadyStamped,
     HotDealDataNotFoundError,
@@ -99,6 +99,8 @@ class ShowDangLoginStrategy(BaseLoginStrategy):
             driver.switch_to.window(another_window)
 
             driver.wait_move_click(SHOWDANG_GOOGLE_SELECT_USER_1)
+
+            driver.wait_move_click(SHOWDANG_GOOGLE_LOGIN_CONTINUE)
 
             driver.switch_to.window(self.main_window_handle)
 
