@@ -35,12 +35,12 @@ jobs:
 
           $jobOnefile = Start-Job -ScriptBlock {
             Write-Host "Building onefile..."
-            pipenv run pyinstaller --onefile main.py --name onadaily --add-data onadailyorigin.yaml:. -y
+            pipenv run pyinstaller --onefile main.py --name onadaily --add-data onadailyorigin.yaml:. -y 2>&1
             Write-Host "Building onefile done."
           }
           $jobFolder = Start-Job -ScriptBlock {
             Write-Host "Building folder..."
-            pipenv run pyinstaller main.py --name onadaily --add-data onadailyorigin.yaml:. -y
+            pipenv run pyinstaller main.py --name onadaily --add-data onadailyorigin.yaml:. -y 2>&1
             Write-Host "Building folder done."
           }
           
