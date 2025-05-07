@@ -141,3 +141,4 @@ STAMP_CALENDAR: dict[str, str] = {
 }
 
 BNA_LOGIN_WND_XPATH = "//a[@title='로그인']"
+SHOWDANG_GOOGLE_SELECT_USER_1 = "//*[@data-authuser='0']"

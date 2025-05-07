@@ -1,5 +1,6 @@
 import abc
 import logging
+import random
 from time import sleep
 from typing import Iterable
 
@@ -8,7 +9,7 @@ from selenium.webdriver.common.alert import Alert
 
 from classes import HotdealInfo, SaleTable
 from config import Site
-from consts import BNA_LOGIN_WND_XPATH
+from consts import BNA_LOGIN_WND_XPATH, SHOWDANG_GOOGLE_SELECT_USER_1
 from errors import (
     AlreadyStamped,
     HotDealDataNotFoundError,
@@ -24,9 +25,15 @@ logger = logging.getLogger("onadaily")
 
 
 class BaseLoginStrategy(abc.ABC):
+    def __init__(self) -> None:
+        self.main_window_handle = ""
+
     def login(self, driver: WebDriverWrapper, site: Site) -> None:
         logger.debug(f"{site.name} 로그인 시작 URL : {site.login_url}")
+        logger.debug(f"{site.name} 로그인 방식 : {site.login}")
+
         self._get_login_url(driver, site)
+
         if driver.check_logined(site):
             logger.debug(f"{site.name} 로그인 이미 되어있음")
             return
@@ -35,13 +42,16 @@ class BaseLoginStrategy(abc.ABC):
         self._enter_id_password(driver, site)
         self._click_login_button(driver, site)
         self._final_login(driver, site)
+        self._wait_login(driver, site)
 
     @handle_selenium_error(LoginFailedError, "로그인 url 열기 실패")
     def _get_login_url(self, driver: WebDriverWrapper, site: Site) -> None:
         driver.get(site.login_url)
 
+    @handle_selenium_error(LoginFailedError, "로그인 준비 중 실패")
     def _prepare_login(self, driver: WebDriverWrapper, site: Site) -> None:
-        pass
+        self.main_window_handle = driver.current_window_handle
+        logger.debug(f"현재 window 핸들 : {self.main_window_handle}")
 
     @handle_selenium_error(LoginFailedError, "ID/Password 입력 실패")
     def _enter_id_password(self, driver: WebDriverWrapper, site: Site) -> None:
@@ -64,8 +74,12 @@ class BaseLoginStrategy(abc.ABC):
             raise LoginFailedError(f"로그인 버튼 클릭 실패/{site.name}에서 지원하지 않는 로그인 방식입니다.")
         driver.wait_move_click(site.btn_login)
 
-    @handle_selenium_error(LoginFailedError, "로그인 확인 실패")
+    @handle_selenium_error(LoginFailedError, "로그인 후 처리 실패")
     def _final_login(self, driver: WebDriverWrapper, site: Site) -> None:
+        pass
+
+    @handle_selenium_error(LoginFailedError, "로그인 확인 실패")
+    def _wait_login(self, driver: WebDriverWrapper, site: Site) -> None:
         logger.debug(f"{site.name} 로그인 확인")
         driver.wait_login(site)
 
@@ -74,16 +88,27 @@ class DefaultLoginStrategy(BaseLoginStrategy):
     pass
 
 
-class BananaLoginStrategy(BaseLoginStrategy):
-    def __init__(self) -> None:
-        self.main_window_handle = ""
+class ShowDangLoginStrategy(BaseLoginStrategy):
 
-    @handle_selenium_error(LoginFailedError, "바나나 로그인 중 실패")
+    @handle_selenium_error(LoginFailedError, "로그인 확인 실패")
+    def _final_login(self, driver: WebDriverWrapper, site: Site) -> None:
+        super()._final_login(driver, site)
+        if site.login == "google":
+            another_window = list(set(driver.window_handles) - {self.main_window_handle})[0]
+            logger.debug(f"로그인 창 핸들 : {another_window}")
+            driver.switch_to.window(another_window)
+
+            driver.wait_move_click(SHOWDANG_GOOGLE_SELECT_USER_1)
+
+            driver.switch_to.window(self.main_window_handle)
+
+
+class BananaLoginStrategy(BaseLoginStrategy):
+
+    @handle_selenium_error(LoginFailedError, "로그인 준비 중 실패")
     def _prepare_login(self, driver: WebDriverWrapper, site: Site) -> None:
         super()._prepare_login(driver, site)
 
-        self.main_window_handle = driver.current_window_handle
-        logger.debug(f"현재 window 핸들 : {self.main_window_handle}")
         driver.wait_move_click(BNA_LOGIN_WND_XPATH)
 
         another_window = list(set(driver.window_handles) - {driver.current_window_handle})[0]
@@ -91,15 +116,18 @@ class BananaLoginStrategy(BaseLoginStrategy):
         driver.switch_to.window(another_window)
 
     def _final_login(self, driver: WebDriverWrapper, site: Site) -> None:
+        super()._final_login(driver, site)
         driver.switch_to.window(self.main_window_handle)
-        return super()._final_login(driver, site)
 
 
 def get_login_strategy(site: Site) -> BaseLoginStrategy:
-    if site.name == "banana":
-        return BananaLoginStrategy()
-    else:
-        return DefaultLoginStrategy()
+    match site.name:
+        case "showdang":
+            return ShowDangLoginStrategy()
+        case "banana":
+            return BananaLoginStrategy()
+        case _:
+            return DefaultLoginStrategy()
 
 
 class BaseStampStrategy(abc.ABC):
@@ -128,7 +156,7 @@ class BaseStampStrategy(abc.ABC):
     @handle_selenium_error(StampFailedError, "출첵 버튼 클릭 실패")
     def _click_stamp_button(self, driver: WebDriverWrapper, site: Site):
         if site.name == "onami":
-            sleep(1)
+            sleep(random.uniform(0.5, 1.0))  # 버튼 클릭 전 대기
 
         driver.wait_move_click(site.btn_stamp)
 
