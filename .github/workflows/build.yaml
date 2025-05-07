@@ -19,9 +19,9 @@ jobs:
       - name: Install pipenv
         run: |
           pip install pipenv
+          $env:PIPENV_VENV_IN_PROJECT=1
       - name: Install dependencies
         run: |
-          $env:PIPENV_VENV_IN_PROJECT=1
           pipenv install
           pipenv run pip install pyinstaller
           pipenv run pip install pip-licenses
