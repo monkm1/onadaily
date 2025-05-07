@@ -36,14 +36,19 @@ jobs:
           ls
 
           $VENV_PYINSTALLER_PATH = (Get-ChildItem -Path .\.venv\Scripts\pyinstaller.exe).FullName
+          $WORKING_DIR = (Get-Location).Path
 
           $jobOnefile = Start-Job -ScriptBlock {
             Write-Host "Building onefile..."
+            cd $using:WORKING_DIR
+            pwd
             & $using:VENV_PYINSTALLER_PATH --onefile main.py --name onadaily --add-data onadailyorigin.yaml:. -y 2>&1
             Write-Host "Building onefile done."
           }
           $jobFolder = Start-Job -ScriptBlock {
             Write-Host "Building folder..."
+            cd $using:WORKING_DIR
+            pwd
             & $using:VENV_PYINSTALLER_PATH main.py --name onadaily --add-data onadailyorigin.yaml:. -y 2>&1
             Write-Host "Building folder done."
           }
