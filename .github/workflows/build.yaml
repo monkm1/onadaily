@@ -44,8 +44,16 @@ jobs:
           echo "Waiting for jobs to finish..."
           Wait-Job -Job $jobOnefile, $jobFolder | Out-Null
 
+          Get-Job | ForEach-Object {
+              Write-Host "--- Receiving output for Job ID: $($_.Id), Name: $($_.Name), State: $($_.State) ---"
+              Receive-Job -Job $_
+              Write-Host "--- End of output for Job ID: $($_.Id) ---"
+          }
+
           echo "Jobs finished."
           Get-Job
+
+          ls
 
           $failedJobs = Get-Job | Where-Object { $_.State -ne 'Completed' }
 
