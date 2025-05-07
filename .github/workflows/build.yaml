@@ -21,6 +21,7 @@ jobs:
           pip install pipenv
       - name: Install dependencies
         run: |
+          $env:PIPENV_VENV_IN_PROJECT=1
           pipenv install
           pipenv run pip install pyinstaller
           pipenv run pip install pip-licenses
@@ -30,6 +31,8 @@ jobs:
           pipenv run pip-licenses > depend-licenses.txt
       - name: Build onefile and folder in parallel
         run: |
+          ls
+
           $jobOnefile = Start-Job -ScriptBlock {
             Write-Host "Building onefile..."
             pipenv run pyinstaller --onefile main.py --name onadaily --add-data onadailyorigin.yaml:. -y
