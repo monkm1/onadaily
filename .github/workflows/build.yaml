@@ -51,24 +51,24 @@ jobs:
 
           if ($failedJobs) {
             Write-Error "One or more jobs failed."
-            $failedJobs | ForEach-Object { Recieve-Job $_ }
+            $failedJobs | ForEach-Object { Receive-Job $_ }
             exit 1
           }
         shell: powershell
       - name: Onefile Compress
         run: |
           Copy-Item .\depend-licenses.txt .\dist\depend-licenses.txt
-          Copy-Item .\LICENSE .\dist\LICENSE
+          Copy-Item .\LICENSE .\dist\LICENSE.txt
           Copy-Item .\README.md .\dist\README.md
 
-          Compress-Archive -Path .\dist\onadaily.exe, .\dist\depend-licenses.txt, .\dist\LICENSE, .\dist\README.md -DestinationPath onadaily-windows-onefile.zip
+          Compress-Archive -Path .\dist\onadaily.exe, .\dist\depend-licenses.txt, .\dist\LICENSE.txt, .\dist\README.md -DestinationPath onadaily-windows-onefile.zip
           ls *.zip
         shell: powershell
 
       - name: Folder Compress
         run: |
           Copy-Item .\depend-licenses.txt .\dist\onadaily\depend-licenses.txt
-          Copy-Item .\LICENSE .\dist\onadaily\LICENSE
+          Copy-Item .\LICENSE .\dist\onadaily\LICENSE.txt
           Copy-Item .\README.md .\dist\onadaily\README.md
 
           Compress-Archive -Path .\dist\onadaily\* -DestinationPath onadaily-windows.zip
