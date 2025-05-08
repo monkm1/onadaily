@@ -135,3 +135,5 @@ test.yaml
 tests.py
 logs/
 userdata/
+
+build.ps1

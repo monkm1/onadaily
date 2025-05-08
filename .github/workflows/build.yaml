@@ -49,21 +49,33 @@ jobs:
           text: ${{ github.ref }}
           regex: 'refs\/tags\/v\d+\.\d+\.\d+pre\d+'
 
+      - name: Process tag name
+        id: process_tag
+        run: |
+          $fulltagname = '${{ github.ref_name }}'
+          $tagname = $fulltagname -replace '(?:pre|beta|rc|alpha|dev|b|a|snapshot)[0-9._-]*$', ''
+          echo "version=$tagname" >> $GITHUB_ENV
+
       - name: Release pre-release
         uses: softprops/action-gh-release@v2
         if: ${{ steps.regex.outputs.match != '' }}
         with:
-          body: "onadaily-windows-onefile.zip 은 하나로 압축시킨 파일입니다. 바이러스로 오진될 수 있습니다. 이 경우엔 onadaily-windows.zip을 사용하세요.\n이 버전은 베타 버전입니다. 오류가 발생할 수 있습니다."
+          body: |
+            onadaily-windows-onefile.zip 은 하나로 압축시킨 파일입니다. 바이러스로 오진될 수 있습니다. 이 경우엔 onadaily-windows.zip을 사용하세요.
+            이 버전은 베타 버전입니다. 오류가 발생할 수 있습니다.
+            [변경 사항](changelog.md#${{ steps.process_tag.outputs.version }})
           files: |
-            onadaily-windows-onefile.zip
-            onadaily-windows.zip
+              onadaily-windows-onefile.zip
+              onadaily-windows.zip
           prerelease: true
       
       - name: Release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         if: ${{ steps.regex.outputs.match == '' }}
         with:
-          body: "onadaily-windows-onefile.zip 은 하나로 압축시킨 파일입니다. 바이러스로 오진될 수 있습니다. 이 경우엔 onadaily-windows.zip을 사용하세요."
+          body: |
+            onadaily-windows-onefile.zip 은 하나로 압축시킨 파일입니다. 바이러스로 오진될 수 있습니다. 이 경우엔 onadaily-windows.zip을 사용하세요.
+            [변경 사항](changelog.md#${{ steps.process_tag.outputs.version }})
           files: |
             onadaily-windows-onefile.zip
             onadaily-windows.zip
