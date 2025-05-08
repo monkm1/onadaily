@@ -12,14 +12,8 @@ from selenium.webdriver.support import expected_conditions as EC  # noqa
 from selenium.webdriver.support.ui import WebDriverWait
 
 from config import Site
-from consts import DEBUG_MORE_INFO
 
 logger = logging.getLogger("onadaily.webdriverwrapper")
-
-if DEBUG_MORE_INFO:
-    logger.setLevel(logging.DEBUG)
-else:
-    logger.setLevel(logging.INFO)
 
 
 class WebDriverWrapper(uc.Chrome):
@@ -57,16 +51,6 @@ class WebDriverWrapper(uc.Chrome):
 
     def remove_query(self) -> str:
         return urlunsplit(urlsplit(self.current_url)._replace(query="", fragment=""))
-
-    def check_login_url(self, site: Site) -> bool:
-        if site.name != "banana":
-            if self.remove_query() != site.login_url:
-                return False
-            return True
-        else:
-            if self.find_elements(By.XPATH, "//div[text() = '회원 로그인']"):
-                return True
-            return False
 
     def move_to(self, element: WebElement) -> None:
         action = ActionChains(self)

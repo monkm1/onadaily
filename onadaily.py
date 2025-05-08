@@ -2,7 +2,7 @@ import logging
 
 from prettytable import PrettyTable
 
-from classes import StampResult
+from classes import LogCaptureContext, StampResult
 from config import Options, Site
 from errors import AlreadyStamped, HotDealDataNotFoundError, LoginFailedError, StampFailedError
 from strategies import get_hotdeal_strategy, get_login_strategy, get_stamp_strategy
@@ -53,6 +53,7 @@ class Onadaily(object):
 
     def check(self, driver: WebDriverWrapper, site: Site) -> StampResult:
         result = StampResult(site)
+        log_capture: LogCaptureContext
         try:
             print(f"== {site.name} ==")
 
@@ -62,32 +63,38 @@ class Onadaily(object):
                 result.passed = True
                 return result
 
-            login_strategy = get_login_strategy(site)
-            login_strategy.login(driver, site)
-            print("로그인 성공")
+            with LogCaptureContext(logger) as capturer:
+                log_capture = capturer
+                login_strategy = get_login_strategy(site)
+                login_strategy.login(driver, site)
+                print("로그인 성공")
 
-            self.showhotdeal(driver, site)
+                self.showhotdeal(driver, site)
 
-            stamp_strategy = get_stamp_strategy(site)
-            stamp_strategy.stamp(driver, site)
+                stamp_strategy = get_stamp_strategy(site)
+                stamp_strategy.stamp(driver, site)
 
-            result.message = "✅ 출석 체크 성공"
-            result.passed = True
+                result.message = "✅ 출석 체크 성공"
+                result.passed = True
+
         except AlreadyStamped:
             result.message = "ℹ️ 이미 출첵함"
             result.passed = True
         except LoginFailedError as e:
+            captured_logs = log_capture.captured_logs_string if log_capture is not None else None
             result.message = f"❌ 로그인 중 실패\n\t-{e}"
             result.iserror = True
-            self.last_exceptions[site] = LoggingInfo(e, site, driver)
+            self.last_exceptions[site] = LoggingInfo(e, site, driver, captured_logs)
         except StampFailedError as e:
+            captured_logs = log_capture.captured_logs_string if log_capture is not None else None
             result.message = f"❌ 출석체크 중 실패\n\t-{e}"
             result.iserror = True
-            self.last_exceptions[site] = LoggingInfo(e, site, driver)
+            self.last_exceptions[site] = LoggingInfo(e, site, driver, captured_logs)
         except Exception as e:
+            captured_logs = log_capture.captured_logs_string if log_capture is not None else None
             result.message = f"❌ 알 수 없는 오류\n\t-{e}"
             result.iserror = True
-            self.last_exceptions[site] = LoggingInfo(e, site, driver)
+            self.last_exceptions[site] = LoggingInfo(e, site, driver, captured_logs)
         finally:
             if result.iserror:
                 result.passed = False
@@ -126,7 +133,9 @@ class Onadaily(object):
 
             for failedsite in failedsites:
                 if failedsite in self.last_exceptions:
-                    save_log_error(self.last_exceptions[failedsite])
+                    log_file_name = save_log_error(self.last_exceptions[failedsite])
+
+                    print(f"로그 저장됨: {log_file_name}")
 
         print("======결과======")
         for result in self.passed.values():

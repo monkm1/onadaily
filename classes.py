@@ -1,8 +1,15 @@
-from typing import Iterable
+import logging
+import logging.handlers
+import traceback
+from datetime import datetime
+from logging import Logger, LogRecord
+from typing import Iterable, Literal, Self
 
 from prettytable import PrettyTable
 
 from config import Site
+from consts import DEBUG_MODE
+from webdriverwrapper import WebDriverWrapper
 
 
 class HotdealInfo(object):
@@ -58,3 +65,85 @@ class SaleTable(PrettyTable):
 
     def __len__(self) -> int:
         return len(self.rows)
+
+
+class LoggingInfo:
+    def __init__(
+        self,
+        exception: Exception,
+        site: Site | None = None,
+        driver: WebDriverWrapper | None = None,
+        debuglog: str | None = None,
+    ) -> None:
+        self.now = datetime.now()
+        self.stacktrace = traceback.format_exc()
+
+        if DEBUG_MODE:
+            print(self.stacktrace)
+
+        self.message = str(exception)
+
+        if site is not None:
+            self.sitename = site.name
+            self.sitelogin = site.login
+        else:
+            self.sitename = "None"
+            self.sitelogin = "None"
+
+        if driver is not None and not driver.quited:
+            try:
+                self.version = f"Chrome version : {driver.capabilities['browserVersion']}"
+            except:  # noqa
+                self.version = "Chrome version : N/A"
+        else:
+            self.version = "Chrome version : N/A"
+
+        if debuglog is not None:
+            self.debuglog = debuglog
+        else:
+            self.debuglog = "N/A"
+
+    def __str__(self) -> str:
+        return (
+            f"{self.now}\n\n"
+            f"{self.message}\n\n"
+            f"{self.stacktrace}\n\n"
+            f"==== DEBUG LOG ====\n"
+            f"{self.debuglog}\n"
+            f"==============\n\n"
+            f"sitename : {self.sitename}\n"
+            f"login : {self.sitelogin}\n"
+            f"{self.version}"
+        )
+
+
+class LogCaptureContext:
+    def __init__(self, logger: Logger) -> None:
+        self.logger = logger
+        self.shared_memory_handler: logging.handlers.MemoryHandler
+
+        self.captured_logs_records: list[LogRecord] = []
+        self.captured_logs_string = ""
+
+        self.formatter = logging.Formatter("%(asctime)s - %(message)s")
+
+    def __enter__(self) -> Self:
+        self.shared_memory_handler = logging.handlers.MemoryHandler(
+            capacity=10000, flushLevel=logging.CRITICAL + 1, target=None, flushOnClose=False
+        )
+
+        self.logger.addHandler(self.shared_memory_handler)
+
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback) -> Literal[False]:
+        self.logger.removeHandler(self.shared_memory_handler)
+
+        self.captured_logs_records = self.shared_memory_handler.buffer
+        self.shared_memory_handler.close()
+
+        logs = [self.formatter.format(record) for record in self.captured_logs_records]
+
+        self.captured_logs_string = "\n".join(logs)
+
+        return False

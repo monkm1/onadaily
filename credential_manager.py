@@ -4,6 +4,8 @@ import keyring
 import keyring.errors
 import pwinput  # type: ignore[import-untyped]
 
+from consts import SHOW_CREDENTIALS
+
 ID = "id"
 PASSWORD = "password"
 
@@ -19,6 +21,9 @@ def get_credential(type: str, site_name: str, namespace: str) -> str:
         raise ValueError("잘못된 type")
 
     credential = keyring.get_password(f"{_get_namespace(site_name, namespace)}", type)
+    logger.debug(f"{type} 불러오기 성공, namesapce: {_get_namespace(site_name, namespace)}")
+    if SHOW_CREDENTIALS:
+        logger.debug(f"불러온 {type}: {credential}")
 
     if credential is None:
         logger.debug(f"{type} 없음, 새로 입력받음")
@@ -36,7 +41,9 @@ def set_credential(type: str, site_name: str, namespace: str) -> str:
 
     while True:
         credential = input_method(f"{site_name}의 {type} 입력(한영키 주의) : ")
-        logger.debug(f"{type} 입력 : {credential}")
+        logger.debug(f"{type} 입력받음")
+        if SHOW_CREDENTIALS:
+            logger.debug(f"입력한 {type}: {credential}")
 
         if not credential.isascii():
             print("🚨잘못된 문자가 들어있습니다. 한영키를 확인하세요.")
@@ -47,7 +54,9 @@ def set_credential(type: str, site_name: str, namespace: str) -> str:
             continue
 
         credential2 = input_method("다시 입력 : ")
-        logger.debug(f"{type} 재입력 : {credential2}")
+        logger.debug(f"{type} 재입력받음")
+        if SHOW_CREDENTIALS:
+            logger.debug(f"재입력한 {type}: {credential2}")
 
         if credential == credential2:
             _save_credential(type, site_name, namespace, credential)
@@ -72,4 +81,6 @@ def _save_credential(type: str, site_name: str, namespace: str, credential: str)
         pass
 
     keyring.set_password(f"{_get_namespace(site_name, namespace)}", type, credential)
-    logger.debug(f"{site_name} {type} 저장 완료: {credential}")
+    logger.debug(f"{site_name} {type} 저장 완료, namesapce: {_get_namespace(site_name, namespace)}")
+    if SHOW_CREDENTIALS:
+        logger.debug(f"저장된 {type}: {credential}")

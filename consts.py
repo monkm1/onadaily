@@ -6,13 +6,9 @@ import sys
 logger = logging.getLogger("onadaily")
 
 DEBUG_MODE = False
-DEBUG_MORE_INFO = False
 
 if len(sys.argv) > 1 and sys.argv[1] == "test":
     DEBUG_MODE = True
-
-if len(sys.argv) > 2 and sys.argv[2] == "more_info":
-    DEBUG_MORE_INFO = True
 
 CONFIG_FILE_NAME = "onadaily.yaml"
 DEFAULT_CONFIG_FILE = "onadailyorigin.yaml"
@@ -20,6 +16,11 @@ DEFAULT_CONFIG_FILE = "onadailyorigin.yaml"
 if getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS"):
     DEFAULT_CONFIG_FILE = os.path.join(sys._MEIPASS, DEFAULT_CONFIG_FILE)
     logger.debug(f"pyinstaller로 빌드된 경우, 기본 설정 파일 경로: {DEFAULT_CONFIG_FILE}")
+
+SHOW_CREDENTIALS = False
+
+if DEBUG_MODE:
+    SHOW_CREDENTIALS = True
 
 
 SITE_NAMES = ["onami", "showdang", "banana", "dingdong", "domae"]

@@ -206,10 +206,13 @@ class Site(object):
 
     def __getattr__(self, __name: str) -> Any:
         if __name in ["id", "password"]:
+            if self.login != "default":
+                raise ValueError("default가 아닌 로그인 방식은 id, password를 불러오면 안됨")
+
             if self._options.common.credential_storage == "lagacy":
                 return self._options._getoption(self.name, __name)
             else:
-                if self._options._getoption(self.name, __name) != "saved":
+                if self._options._getoption(self.name, __name) != "saved":  # 저장되지 않은 경우
                     credential = set_credential(__name, self.name, self._options.common.namespace)
                     self.save_credential_status(__name)
 
@@ -239,5 +242,5 @@ class Site(object):
     def __hash__(self) -> int:
         return hash(self.name)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.name

@@ -58,15 +58,23 @@ class BaseLoginStrategy(abc.ABC):
         if site.login == "default":
             idform = driver.wait_move_click(site.input_id)
             driver.cleartextarea(idform)
-            assert site.id is not None
-            idform.send_keys(site.id)
+
+            if (id := site.id) is None:
+                raise ValueError("ID가 None입니다.")
+            idform.send_keys(id)
 
             pwdform = driver.wait_move_click(site.input_pwd)
             driver.cleartextarea(pwdform)
-            assert site.password is not None
-            pwdform.send_keys(site.password)  # write id and password
 
+            if (password := site.password) is None:
+                raise ValueError("Password가 None입니다.")
+
+            pwdform.send_keys(password)
+            # write id and password
             logger.debug("id/password 입력 완료")
+
+        else:
+            logger.debug("default가 아닌 로그인 방식이라 id/password 입력 안함")
 
     @handle_selenium_error(LoginFailedError, "로그인 버튼 클릭 실패")
     def _click_login_button(self, driver: WebDriverWrapper, site: Site) -> None:

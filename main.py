@@ -11,14 +11,13 @@ if __name__ == "__main__":
     options = None
     try:
         logger = logging.getLogger("onadaily")
+        logger.setLevel(logging.DEBUG)
+
         if DEBUG_MODE:
-            logger.setLevel(logging.DEBUG)
-        else:
-            logger.setLevel(logging.INFO)
-        formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
-        handler = logging.StreamHandler()
-        handler.setFormatter(formatter)
-        logger.addHandler(handler)
+            handler = logging.StreamHandler()
+            formatter = logging.Formatter("%(asctime)s - %(message)s")
+            handler.setFormatter(formatter)
+            logger.addHandler(handler)
 
         options = Options()
 
