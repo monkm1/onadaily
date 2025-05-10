@@ -37,7 +37,7 @@ class Onadaily(object):
         if self.options.common.showhotdeal and site.hotdeal_table is not None:  # 핫딜 테이블 불러오기
             try:
                 hotdeal_strategy = get_hotdeal_strategy(site)
-                table = hotdeal_strategy.get_hotdeal_info(driver, site)
+                table = hotdeal_strategy.get_hotdeal_info(driver.page_source, site)
             except HotDealDataNotFoundError as e:
                 logger.debug(f"핫딜 테이블 파싱 실패 : {e}")
                 print("핫딜 테이블을 찾지 못했습니다.")
@@ -64,6 +64,7 @@ class Onadaily(object):
                 return result
 
             with LogCaptureContext(logger) as capturer:
+                logger.debug(f"=== {site.name} 출석 체크 시작 ===")
                 log_capture = capturer
                 login_strategy = get_login_strategy(site)
                 login_strategy.login(driver, site)

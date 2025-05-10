@@ -41,8 +41,9 @@ class BaseLoginStrategy(abc.ABC):
         self._prepare_login(driver, site)
         self._enter_id_password(driver, site)
         self._click_login_button(driver, site)
-        self._final_login(driver, site)
+        self._after_click_login_btn(driver, site)
         self._wait_login(driver, site)
+        self._final_login(driver, site)
 
     @handle_selenium_error(LoginFailedError, "로그인 url 열기 실패")
     def _get_login_url(self, driver: WebDriverWrapper, site: Site) -> None:
@@ -83,13 +84,17 @@ class BaseLoginStrategy(abc.ABC):
         driver.wait_move_click(site.btn_login)
 
     @handle_selenium_error(LoginFailedError, "로그인 후 처리 실패")
-    def _final_login(self, driver: WebDriverWrapper, site: Site) -> None:
+    def _after_click_login_btn(self, driver: WebDriverWrapper, site: Site) -> None:
         pass
 
     @handle_selenium_error(LoginFailedError, "로그인 확인 실패")
     def _wait_login(self, driver: WebDriverWrapper, site: Site) -> None:
         logger.debug(f"{site.name} 로그인 확인")
         driver.wait_login(site)
+
+    @handle_selenium_error(LoginFailedError, "로그인 후 처리 실패")
+    def _final_login(self, driver: WebDriverWrapper, site: Site) -> None:
+        pass
 
 
 class DefaultLoginStrategy(BaseLoginStrategy):
@@ -99,8 +104,8 @@ class DefaultLoginStrategy(BaseLoginStrategy):
 class ShowDangLoginStrategy(BaseLoginStrategy):
 
     @handle_selenium_error(LoginFailedError, "로그인 확인 실패")
-    def _final_login(self, driver: WebDriverWrapper, site: Site) -> None:
-        super()._final_login(driver, site)
+    def _after_click_login_btn(self, driver: WebDriverWrapper, site: Site) -> None:
+        super()._after_click_login_btn(driver, site)
         if site.login == "google":
             another_window = list(set(driver.window_handles) - {self.main_window_handle})[0]
             logger.debug(f"로그인 창 핸들 : {another_window}")
@@ -125,8 +130,8 @@ class BananaLoginStrategy(BaseLoginStrategy):
         logger.debug(f"로그인 창 핸들 : {another_window}")
         driver.switch_to.window(another_window)
 
-    def _final_login(self, driver: WebDriverWrapper, site: Site) -> None:
-        super()._final_login(driver, site)
+    def _after_click_login_btn(self, driver: WebDriverWrapper, site: Site) -> None:
+        super()._after_click_login_btn(driver, site)
         driver.switch_to.window(self.main_window_handle)
 
 
@@ -206,8 +211,8 @@ def get_stamp_strategy(site: Site) -> BaseStampStrategy:
 
 
 class BaseHotDealStrategy(abc.ABC):
-    def get_hotdeal_info(self, driver: WebDriverWrapper, site: Site) -> SaleTable:
-        soup = self._get_soup(driver)
+    def get_hotdeal_info(self, page_source: str, site: Site) -> SaleTable:
+        soup = self._get_soup(page_source)
 
         table = self._get_hotdeal_table(soup, site)
 
@@ -219,8 +224,8 @@ class BaseHotDealStrategy(abc.ABC):
         resulttable.add_products(hotdeallist)
         return resulttable
 
-    def _get_soup(self, driver: WebDriverWrapper) -> BeautifulSoup:
-        return BeautifulSoup(driver.page_source, "html.parser")
+    def _get_soup(self, page_source: str) -> BeautifulSoup:
+        return BeautifulSoup(page_source, "html.parser")
 
     def _get_hotdeal_table(self, soup: BeautifulSoup, site: Site) -> Tag:
         if site.hotdeal_table is None:

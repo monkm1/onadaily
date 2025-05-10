@@ -11,6 +11,8 @@ from config import Site
 from consts import DEBUG_MODE
 from webdriverwrapper import WebDriverWrapper
 
+logger = logging.getLogger("onadaily.classes")
+
 
 class HotdealInfo(object):
     name: str
@@ -106,13 +108,13 @@ class LoggingInfo:
     def __str__(self) -> str:
         return (
             f"{self.now}\n\n"
-            f"{self.message}\n\n"
-            f"{self.stacktrace}\n\n"
-            f"==== DEBUG LOG ====\n"
-            f"{self.debuglog}\n"
-            f"==============\n\n"
+            f"{self.message}\n"
             f"sitename : {self.sitename}\n"
-            f"login : {self.sitelogin}\n"
+            f"login : {self.sitelogin}\n\n"
+            f"{self.stacktrace}\n\n"
+            f"====== DEBUG LOG ======\n"
+            f"{self.debuglog}\n"
+            f"=======================\n\n"
             f"{self.version}"
         )
 
@@ -125,9 +127,10 @@ class LogCaptureContext:
         self.captured_logs_records: list[LogRecord] = []
         self.captured_logs_string = ""
 
-        self.formatter = logging.Formatter("%(asctime)s - %(message)s")
+        self.formatter = logging.Formatter("%(asctime)s - %(module)s - %(message)s")
 
     def __enter__(self) -> Self:
+        logger.debug("로그 캡처 시작")
         self.shared_memory_handler = logging.handlers.MemoryHandler(
             capacity=10000, flushLevel=logging.CRITICAL + 1, target=None, flushOnClose=False
         )
@@ -137,6 +140,7 @@ class LogCaptureContext:
         return self
 
     def __exit__(self, exc_type, exc_value, traceback) -> Literal[False]:
+        logger.debug("로그 캡처 종료")
         self.logger.removeHandler(self.shared_memory_handler)
 
         self.captured_logs_records = self.shared_memory_handler.buffer
