@@ -1,13 +1,15 @@
+import asyncio
 import logging
 
+from patchright.async_api import BrowserContext, Page, async_playwright
 from prettytable import PrettyTable
 
 from classes import LogCaptureContext, StampResult
 from config import Options, Site
 from errors import AlreadyStamped, HotDealDataNotFoundError, LoginFailedError, StampFailedError
+from playwrighthelper import makebrowser
 from strategies import get_hotdeal_strategy, get_login_strategy, get_stamp_strategy
-from utils import LoggingInfo, get_chrome_options, save_log_error
-from webdriverwrapper import WebDriverWrapper
+from utils import LoggingInfo, save_log_error
 
 logger = logging.getLogger("onadaily")
 
@@ -24,56 +26,51 @@ class Onadaily(object):
 
         self.last_exceptions: dict[Site, LoggingInfo] = {}
 
-    def initdriver(self) -> WebDriverWrapper:
-        driver = WebDriverWrapper(
-            get_chrome_options(self.options.common.headless),
-            self.options.common.waittime,
-            self.options.datadir_required(),
-        )
+        self.chromeversion = "N/A"
 
-        return driver
-
-    def showhotdeal(self, driver: WebDriverWrapper, site: Site) -> None:
+    async def showhotdeal(self, page: Page, site: Site) -> None:
         if self.options.common.showhotdeal and site.hotdeal_table is not None:  # 핫딜 테이블 불러오기
             try:
                 hotdeal_strategy = get_hotdeal_strategy(site)
-                table = hotdeal_strategy.get_hotdeal_info(driver.page_source, site)
+                await page.goto(site.main_url)
+                table = hotdeal_strategy.get_hotdeal_info(await page.content(), site)
             except HotDealDataNotFoundError as e:
                 logger.debug(f"핫딜 테이블 파싱 실패 : {e}")
-                print("핫딜 테이블을 찾지 못했습니다.")
+                logger.info("핫딜 테이블을 찾지 못했습니다.")
                 return
 
             if len(table) > 0:
-                print(table)
+                logger.info(str(table))
 
                 if len(self.options.common.keywordnoti) > 0:  # 키워드 알람 설정됨
                     keywordproducts = table.keywordcheck(self.options.common.keywordnoti)
                     if len(keywordproducts) > 0:
                         self.keywordnoti.add_rows(keywordproducts, divider=True)
 
-    def check(self, driver: WebDriverWrapper, site: Site) -> StampResult:
+    async def check(self, browser: BrowserContext, site: Site) -> tuple[StampResult, LogCaptureContext]:
         result = StampResult(site)
         log_capture: LogCaptureContext
         try:
-            print(f"== {site.name} ==")
+            async with LogCaptureContext(logger) as capturer:
+                logger.info(f"== {site.name} ==")
 
-            if not site.enable:
-                print("skip")
-                result.message = "스킵"
-                result.passed = True
-                return result
+                if not site.enable:
+                    logger.info("skip")
+                    result.message = "스킵"
+                    result.passed = True
+                    return result, capturer
 
-            with LogCaptureContext(logger) as capturer:
                 logger.debug(f"=== {site.name} 출석 체크 시작 ===")
                 log_capture = capturer
-                login_strategy = get_login_strategy(site)
-                login_strategy.login(driver, site)
-                print("로그인 성공")
+                page = await browser.new_page()
+                login_strategy = get_login_strategy(page, site)
+                await login_strategy.login(site)
+                logger.info("로그인 성공")
 
-                self.showhotdeal(driver, site)
+                await self.showhotdeal(page, site)
 
-                stamp_strategy = get_stamp_strategy(site)
-                stamp_strategy.stamp(driver, site)
+                stamp_strategy = get_stamp_strategy(page, site)
+                await stamp_strategy.stamp(site)
 
                 result.message = "✅ 출석 체크 성공"
                 result.passed = True
@@ -85,39 +82,50 @@ class Onadaily(object):
             captured_logs = log_capture.captured_logs_string if log_capture is not None else None
             result.message = f"❌ 로그인 중 실패\n\t-{e}"
             result.iserror = True
-            self.last_exceptions[site] = LoggingInfo(e, site, driver, captured_logs)
+            self.last_exceptions[site] = LoggingInfo(e, site, self.chromeversion, captured_logs)
         except StampFailedError as e:
             captured_logs = log_capture.captured_logs_string if log_capture is not None else None
             result.message = f"❌ 출석체크 중 실패\n\t-{e}"
             result.iserror = True
-            self.last_exceptions[site] = LoggingInfo(e, site, driver, captured_logs)
+            self.last_exceptions[site] = LoggingInfo(e, site, self.chromeversion, captured_logs)
         except Exception as e:
             captured_logs = log_capture.captured_logs_string if log_capture is not None else None
             result.message = f"❌ 알 수 없는 오류\n\t-{e}"
             result.iserror = True
-            self.last_exceptions[site] = LoggingInfo(e, site, driver, captured_logs)
+            self.last_exceptions[site] = LoggingInfo(e, site, self.chromeversion, captured_logs)
         finally:
             if result.iserror:
                 result.passed = False
 
-        print(result.message)
-        return result
+        return result, log_capture
 
-    def run(self) -> None:
+    async def run(self) -> None:
         retry_count = 0
         max_retries = self.options.common.retrytime if self.options.common.autoretry else 1
+
+        print(f"최대 재시도 횟수 : {max_retries}")
 
         while retry_count < max_retries and not all(self.passed.values()):
             retry_count += 1
             order = self.options.common.order
 
-            with self.initdriver() as driver:
+            async with async_playwright() as p:
+                browser = await makebrowser(p, headless=self.options.common.headless)
+                browser.set_default_timeout(self.options.common.waittime * 1000)
+
+                jobs = []
+
                 for site in order:
-                    self._currentsite = site
                     if self.passed[site]:
                         continue
+                    jobs.append(self.check(browser, site))
 
-                    self.passed[site] = self.check(driver, site)
+                results: list[tuple[StampResult, LogCaptureContext]] = await asyncio.gather(*jobs)
+
+            print(f"========== {retry_count}회차 결과 ==========")
+            for result, log in results:
+                self.passed[result.site] = result
+                print(log.captured_print_logs_string)
 
         if all(self.passed.values()):
             if len(self.options.common.keywordnoti) > 0:

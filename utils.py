@@ -4,38 +4,26 @@ import os
 import sys
 from datetime import datetime
 from math import ceil
-from typing import Any, Callable, Type
+from typing import Any, Callable, Type, TypeVar, cast
 
 import pytz
-import undetected_chromedriver as uc  # type: ignore[import-untyped]
 from bs4 import BeautifulSoup
-from selenium.common import (
-    NoAlertPresentException,
-    NoSuchElementException,
-    TimeoutException,
-    UnexpectedAlertPresentException,
-    WebDriverException,
-)
+from patchright.async_api import TimeoutError
 
 from classes import LoggingInfo
 from config import Site
-from errors import ParseError
 
 logger = logging.getLogger("onadaily")
 
 
 def check_already_stamp(site: Site, source: str) -> bool:
     soup = BeautifulSoup(source, "html.parser")
-    tablesoup = soup.select_one(site.stamp_calendar)
-
-    if tablesoup is None:
-        raise ParseError("오류 : 달력을 찾을 수 없습니다.")
 
     week, day = num_of_month_week()
 
     logger.debug(f"주차 : {week}, 요일 : {day}")
 
-    weekssoup = tablesoup.find_all(True, recursive=False)
+    weekssoup = soup.find_all(True, recursive=False)
     weeksoup = weekssoup[week - 1].find_all(True, recursive=False)
 
     todaysoup = weeksoup[day - 1]
@@ -69,29 +57,6 @@ def num_of_month_week() -> tuple[int, int]:
     return weeknum, dayofweeknum
 
 
-def get_chrome_options(headless=False) -> uc.ChromeOptions:
-    chromeoptions = uc.ChromeOptions()
-    useragent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"  # noqa
-    chromeoptions.add_argument(f"--user-agent={useragent}")
-    chromeoptions.add_argument("--disable-extensions")
-    chromeoptions.add_argument("--log-level=3")
-    chromeoptions.add_argument("--disable-popup-blocking")
-
-    # chromeoptions.add_argument("--disable-dev-shm-usage")
-
-    # chromeoptions.add_argument("--remote-debugging-port=9222")
-
-    if headless:
-        chromeoptions.add_argument("--disable-gpu")
-        chromeoptions.add_argument("--headless")
-        chromeoptions.add_argument("--window-size=1920,1080")
-        chromeoptions.add_argument("--no-sandbox")
-        chromeoptions.add_argument("--start-maximized")
-        chromeoptions.add_argument("--disable-setuid-sandbox")
-
-    return chromeoptions
-
-
 if getattr(sys, "frozen", False):
     app_path = os.path.dirname(sys.executable)
 else:
@@ -117,23 +82,22 @@ def save_log_error(logginginfo: LoggingInfo) -> str:
     return filename
 
 
-def handle_selenium_error(wrap_exception: Type[Exception], message_prefix: str):
-    def inner(func: Callable[..., Any]):
+T = TypeVar("T", bound=Callable[..., Any])
+
+
+class HandlePlayWrightError:
+    def __init__(self, wrap_exception: Type[Exception], message_prefix: str) -> None:
+        self.wrap_exception = wrap_exception
+        self.message_prefix = message_prefix
+
+    def __call__(self, func: T) -> T:
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
             try:
                 return func(*args, **kwargs)
-            except TimeoutException as ex:
-                raise wrap_exception(f"{message_prefix}/시간 초과 발생") from ex
-            except NoSuchElementException as ex:
-                raise wrap_exception(f"{message_prefix}/요소를 찾을 수 없음") from ex
-            except UnexpectedAlertPresentException as ex:
-                raise wrap_exception(f"{message_prefix}/처리되지 않은 얼럿 발생") from ex
-            except NoAlertPresentException as ex:
-                raise wrap_exception(f"{message_prefix}/처리할 얼럿 없음") from ex
-            except WebDriverException as ex:
-                raise wrap_exception(f"{message_prefix}/알 수 없는 셀레니움 에러") from ex
+            except TimeoutError as ex:
+                raise self.wrap_exception(f"{self.message_prefix}/시간 초과") from ex
+            except Exception as ex:
+                raise self.wrap_exception(f"{self.message_prefix}/알 수 없는 에러") from ex
 
-        return wrapper
-
-    return inner
+        return cast(T, wrapper)

@@ -9,9 +9,9 @@ selenium = "*"
 beautifulsoup4 = "*"
 prettytable = "*"
 pytz = "*"
-undetected-chromedriver = "*"
 keyring = "*"
 pwinput = "*"
+patchright = "*"
 
 [dev-packages]
 mypy = "*"
@@ -19,8 +19,8 @@ types-pyyaml = "*"
 types-pytz = "*"
 types-beautifulsoup4 = "*"
 flake8 = "*"
-pep8-naming = "*"
 pyinstaller = "*"
+pep8-naming = "*"
 
 [requires]
 python_version = "3.13"

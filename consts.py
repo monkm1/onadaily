@@ -6,12 +6,16 @@ import sys
 logger = logging.getLogger("onadaily")
 
 DEBUG_MODE = False
+CONFIG_FILE_NAME = "onadaily.yaml"
+DEFAULT_CONFIG_FILE = "onadailyorigin.yaml"
+
 
 if len(sys.argv) > 1 and sys.argv[1] == "test":
     DEBUG_MODE = True
+    CONFIG_FILE_NAME = "test.yaml"
+elif len(sys.argv) > 1 and sys.argv[1] == "testquiet":
+    CONFIG_FILE_NAME = "test.yaml"
 
-CONFIG_FILE_NAME = "onadaily.yaml"
-DEFAULT_CONFIG_FILE = "onadailyorigin.yaml"
 
 if getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS"):
     DEFAULT_CONFIG_FILE = os.path.join(sys._MEIPASS, DEFAULT_CONFIG_FILE)
@@ -25,17 +29,17 @@ if DEBUG_MODE:
 
 SITE_NAMES = ["onami", "showdang", "banana", "dingdong", "domae"]
 URLS = {
-    "onami": "https://oname.kr/index.html",
+    "onami": "https://oname.kr/",
     "showdang": "https://showdang.co.kr/",
     "banana": "https://www.bananamall.co.kr/",
-    "dingdong": "https://www.dingdong.co.kr",
+    "dingdong": "https://dingdong.co.kr",
     "domae": "https://domaedoll.com/",
 }
 STAMP_URLS = {
     "onami": "https://oname.kr/attend/stamp2.html",
     "showdang": "https://showdang.co.kr/event/attend_stamp.php",
     "banana": "https://www.bananamall.co.kr/etc/attendance.php",
-    "dingdong": "https://www.dingdong.co.kr/attend/stamp.html",
+    "dingdong": "https://dingdong.co.kr/attend/stamp.html",
     "domae": "https://domaedoll.com/attend/stamp.html",
 }
 LOGIN_URLS = {

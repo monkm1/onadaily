@@ -42,9 +42,6 @@ class Options(object):
         return self._settings[section][option]
 
     def load_settings(self) -> None:
-        if consts.DEBUG_MODE:  # test mode
-            consts.CONFIG_FILE_NAME = "test.yaml"  # noqa
-
         if not path.isfile(consts.CONFIG_FILE_NAME):
             print("설정 파일이 없습니다. 기본 설정 파일을 복사합니다.")
             shutil.copy(consts.DEFAULT_CONFIG_FILE, consts.CONFIG_FILE_NAME)
@@ -104,9 +101,9 @@ class Options(object):
                 self._settings[sitename] = default_section.copy()  # 얕은 복사
                 self._settings["common"]["order"].append(sitename)  # 사이트 섹션 추가 시 order에 추가
 
-        if self.datadir_required():
-            if self._settings["common"]["headless"]:
-                raise ConfigError("소셜 로그인과 headless 모드를 같이 사용할 수 없습니다.")
+        # if self.datadir_required():
+        # if self._settings["common"]["headless"]:
+        # raise ConfigError("소셜 로그인과 headless 모드를 같이 사용할 수 없습니다.")
 
         if self._settings["common"]["credential_storage"] not in ["keyring", "lagacy"]:
             print("잘못된 credential_storage 설정, 기본값 keyring으로 설정합니다.")

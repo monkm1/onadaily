@@ -1,3 +1,4 @@
+import asyncio
 import logging
 
 from yaml import YAMLError
@@ -22,7 +23,7 @@ if __name__ == "__main__":
         options = Options()
 
         main = Onadaily()
-        main.run()
+        asyncio.run(main.run())
     except ConfigError as e:
         logger.exception(f"설정 파일 오류 : {e}\n")
     except YAMLError as e:

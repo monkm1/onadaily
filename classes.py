@@ -1,6 +1,8 @@
 import logging
 import logging.handlers
 import traceback
+import uuid
+from contextvars import ContextVar
 from datetime import datetime
 from logging import Logger, LogRecord
 from typing import Iterable, Literal, Self
@@ -9,7 +11,6 @@ from prettytable import PrettyTable
 
 from config import Site
 from consts import DEBUG_MODE
-from webdriverwrapper import WebDriverWrapper
 
 logger = logging.getLogger("onadaily.classes")
 
@@ -74,7 +75,7 @@ class LoggingInfo:
         self,
         exception: Exception,
         site: Site | None = None,
-        driver: WebDriverWrapper | None = None,
+        version: str = "Chrome version : N/A",
         debuglog: str | None = None,
     ) -> None:
         self.now = datetime.now()
@@ -92,13 +93,7 @@ class LoggingInfo:
             self.sitename = "None"
             self.sitelogin = "None"
 
-        if driver is not None and not driver.quited:
-            try:
-                self.version = f"Chrome version : {driver.capabilities['browserVersion']}"
-            except:  # noqa
-                self.version = "Chrome version : N/A"
-        else:
-            self.version = "Chrome version : N/A"
+        self.version = version
 
         if debuglog is not None:
             self.debuglog = debuglog
@@ -119,6 +114,19 @@ class LoggingInfo:
         )
 
 
+async_id = ContextVar("async_id", default=None)
+
+
+class AsyncLogFilter(logging.Filter):
+    def __init__(self, capture_id: str) -> None:
+        super().__init__()
+        self.capture_id = capture_id
+
+    def filter(self, record: LogRecord) -> bool:
+        active_id = async_id.get()
+        return active_id == self.capture_id
+
+
 class LogCaptureContext:
     def __init__(self, logger: Logger) -> None:
         self.logger = logger
@@ -126,20 +134,27 @@ class LogCaptureContext:
 
         self.captured_logs_records: list[LogRecord] = []
         self.captured_logs_string = ""
+        self.captured_print_logs_string = ""
 
         self.formatter = logging.Formatter("%(asctime)s - %(module)s - %(message)s")
+        self.printformatter = logging.Formatter("%(message)s")
 
-    def __enter__(self) -> Self:
-        logger.debug("로그 캡처 시작")
+        self.capture_id = str(uuid.uuid4())
+
+    async def __aenter__(self) -> Self:
+        logger.debug(f"로그 캡처 시작 id : {self.capture_id}")
+        async_id.set(self.capture_id)  # type: ignore[arg-type]
         self.shared_memory_handler = logging.handlers.MemoryHandler(
             capacity=10000, flushLevel=logging.CRITICAL + 1, target=None, flushOnClose=False
         )
+
+        self.shared_memory_handler.addFilter(AsyncLogFilter(self.capture_id))
 
         self.logger.addHandler(self.shared_memory_handler)
 
         return self
 
-    def __exit__(self, exc_type, exc_value, traceback) -> Literal[False]:
+    async def __aexit__(self, exc_type, exc_value, traceback) -> Literal[False]:
         logger.debug("로그 캡처 종료")
         self.logger.removeHandler(self.shared_memory_handler)
 
@@ -147,7 +162,13 @@ class LogCaptureContext:
         self.shared_memory_handler.close()
 
         logs = [self.formatter.format(record) for record in self.captured_logs_records]
+        logs_print = [
+            self.printformatter.format(record)
+            for record in self.captured_logs_records
+            if record.levelno == logging.INFO
+        ]
 
         self.captured_logs_string = "\n".join(logs)
+        self.captured_print_logs_string = "\n".join(logs_print)
 
         return False
