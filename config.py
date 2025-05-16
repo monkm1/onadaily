@@ -3,7 +3,6 @@ import shutil
 from os import path
 from typing import Any, Dict, Optional, get_type_hints
 
-# type: ignore[import-untyped]
 import yaml
 
 import consts
