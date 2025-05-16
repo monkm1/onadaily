@@ -55,7 +55,7 @@ jobs:
           $fulltagname = '${{ github.ref_name }}'
           $tagname = $fulltagname -replace '(?:pre|beta|rc|alpha|dev|b|a|snapshot)[0-9._-]*$', ''
           $tagnamewitoutdot = $tagname -replace '\.', ''
-          echo "version=$tagnamewitoutdot" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          echo version=$($tagnamewitoutdot) >> $env:GITHUB_OUTPUT
 
       - name: Release pre-release
         uses: softprops/action-gh-release@v2
