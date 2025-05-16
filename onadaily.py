@@ -7,7 +7,7 @@ from prettytable import PrettyTable
 from classes import LogCaptureContext, StampResult
 from config import Options, Site
 from errors import AlreadyStamped, HotDealDataNotFoundError, LoginFailedError, StampFailedError
-from playwrighthelper import makebrowser
+from playwrighthelper import makebrowser, remove_cookie
 from strategies import get_hotdeal_strategy, get_login_strategy, get_stamp_strategy
 from utils import LoggingInfo, save_log_error
 
@@ -112,6 +112,7 @@ class Onadaily(object):
             async with async_playwright() as p:
                 browser = await makebrowser(p, headless=self.options.common.headless)
                 browser.set_default_timeout(self.options.common.waittime * 1000)
+                # await remove_cookie(browser)
 
                 jobs = []
 
