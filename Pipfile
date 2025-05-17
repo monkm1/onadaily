@@ -21,6 +21,7 @@ types-beautifulsoup4 = "*"
 flake8 = "*"
 pyinstaller = "*"
 pep8-naming = "*"
+ipykernel = "*"
 
 [requires]
 python_version = "3.13"

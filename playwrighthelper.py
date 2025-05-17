@@ -1,7 +1,7 @@
 import logging
 import os
 from typing import Pattern
-from urllib.parse import urlparse
+from urllib.parse import urlparse, urlsplit
 
 from patchright.async_api import BrowserContext, Locator, Page, Playwright
 
@@ -52,13 +52,35 @@ async def remove_cookie(browser: BrowserContext) -> None:
 
 async def check_logined(page: Page, site: Site) -> bool:
     element = locator(page, site.login_check_xpath)
-
-    if await element.count() == 0:
-        return False
-    else:
-        return True
+    return await element.count() > 0
 
 
 async def wait_login(page: Page, site: Site) -> None:
     element = locator(page, site.login_check_xpath)
     await element.wait_for(state="visible")
+
+
+def normalize_url(url: str) -> str:
+    parsed = urlsplit(url)
+
+    if parsed.netloc and not parsed.scheme:
+        url = f"https:{url}"
+    if not parsed.scheme:
+        url = f"https://{url}"
+
+    parsed = urlsplit(url)
+
+    netloc = parsed.netloc.split(":", 1)
+    hostname = netloc[0].lower()
+
+    if hostname.startswith("www."):
+        hostname = hostname[4:]
+
+    path = parsed.path
+
+    if not path:
+        path = "/"
+    elif path != "/" and path.endswith("/"):
+        path = path[:-1]
+
+    return f"{hostname}{path}"

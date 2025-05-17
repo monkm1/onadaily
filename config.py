@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import logging
 import shutil
 from os import path
@@ -8,6 +10,7 @@ import yaml
 import consts
 from credential_manager import get_credential, set_credential
 from errors import ConfigError
+from logsupport import add_stream_handler
 
 logger = logging.getLogger("onadaily")
 
@@ -34,6 +37,9 @@ class Options(object):
 
         self.sites = [Site(site_name, self) for site_name in consts.SITE_NAMES]
         self.common = _Common(self)  # common에서 self.sites를 참조하기 때문에 self.sites를 먼저 초기화해야 함
+
+        if not self.common.concurrent and not consts.DEBUG_MODE:
+            add_stream_handler(logger, logging.INFO)
 
     def _getoption(self, section: str, option: str) -> Any:
         if section not in self._settings:
@@ -82,6 +88,7 @@ class Options(object):
             "keywordnoti": [],
             "credential_storage": "keyring",
             "namespace": "Onadaily",
+            "concurrent": True,
         }
 
         common_type_hint = get_type_hints(_Common)
@@ -144,6 +151,7 @@ class _Common(object):
     keywordnoti: list[str]
     credential_storage: str
     namespace: str
+    concurrent: bool
 
     def __init__(self, options: Options) -> None:
         self._order: list["Site"] = []

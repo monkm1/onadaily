@@ -1,23 +1,24 @@
 import asyncio
 import logging
+from typing import Awaitable
 
 from patchright.async_api import BrowserContext, Page, async_playwright
 from prettytable import PrettyTable
 
-from classes import LogCaptureContext, StampResult
+from classes import StampResult
 from config import Options, Site
 from consts import ALWAYS_SAVE_LOG
 from errors import AlreadyStamped, HotDealDataNotFoundError, LoginFailedError, StampFailedError
 from hotdealstrategies import get_hotdeal_strategy
 from loginstrategies import get_login_strategy
-from playwrighthelper import makebrowser
+from logsupport import LogCaptureContext, LoggingInfo, save_log
+from playwrighthelper import makebrowser, normalize_url
 from stampstrategies import get_stamp_strategy
-from utils import LoggingInfo, save_log
 
 logger = logging.getLogger("onadaily")
 
 
-class Onadaily(object):  # TODO: 동시 실행 옵션 추가, 버전 정보 추가
+class Onadaily(object):  # TODO: 버전 정보 추가
     def __init__(self) -> None:
         self.passed: dict[Site, StampResult] = {}
         self.options = Options()
@@ -35,7 +36,8 @@ class Onadaily(object):  # TODO: 동시 실행 옵션 추가, 버전 정보 추�
         if self.options.common.showhotdeal and site.hotdeal_table is not None:  # 핫딜 테이블 불러오기
             try:
                 hotdeal_strategy = get_hotdeal_strategy(site)
-                await page.goto(site.main_url)
+                if normalize_url(page.url) != normalize_url(site.main_url):
+                    await page.goto(site.main_url)
                 table = hotdeal_strategy.get_hotdeal_info(await page.content(), site)
             except HotDealDataNotFoundError as e:
                 logger.debug(f"핫딜 테이블 파싱 실패 : {e}")
@@ -99,7 +101,7 @@ class Onadaily(object):  # TODO: 동시 실행 옵션 추가, 버전 정보 추�
         finally:
             if result.iserror:
                 result.passed = False
-            result.logginginfo = LoggingInfo(exception, site, self.chromeversion, log_capture)
+            result.logginginfo = LoggingInfo(exception, site.name, site.login, self.chromeversion, log_capture)
             if page is not None and not page.is_closed():
                 await page.close()
 
@@ -122,19 +124,26 @@ class Onadaily(object):  # TODO: 동시 실행 옵션 추가, 버전 정보 추�
 
                 # await remove_cookie(browser)
                 print("브라우저 초기화 완료")
-                jobs = []
+                jobs: list[Awaitable] = []
 
                 for site in order:
                     if self.passed[site]:
                         continue
                     jobs.append(self.check(browser, site, retry_count))
 
-                results: list[StampResult] = await asyncio.gather(*jobs)
+                if self.options.common.concurrent:
+                    results: list[StampResult] = await asyncio.gather(*jobs)
+                else:
+                    results = []
+                    for job in jobs:
+                        results.append(await job)
 
-            print(f"========== {retry_count}회차 결과 ==========")
+            if self.options.common.concurrent:
+                print(f"========== {retry_count}회차 결과 ==========")
             for result in results:
                 self.passed[result.site] = result
-                print(result.logginginfo.printlog)
+                if self.options.common.concurrent:
+                    print(result.logginginfo.printlog)
 
                 if result.iserror:
                     self.latest_logginginfo[result.site] = result.logginginfo

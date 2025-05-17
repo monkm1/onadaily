@@ -15,12 +15,12 @@ class BaseStampStrategy(abc.ABC):
     def __init__(self, page: Page) -> None:
         self.working_page = page
 
-    async def stamp(self, site: Site):
+    async def stamp(self, site: Site) -> None:
         await self._prepare_stamp(site)
         calendar_page = await self._get_calendar_source(site)
 
         try:
-            if check_already_stamp(site, calendar_page):
+            if check_already_stamp(site.name, calendar_page):
                 raise AlreadyStamped(f"{site.name} : 이미 출첵함")
         except ParseError as ex:
             raise StampFailedError("달력 파싱 중 오류 발생") from ex

@@ -1,7 +1,7 @@
+from __future__ import annotations
+
 import functools
 import logging
-import os
-import sys
 from datetime import datetime
 from math import ceil
 from typing import Any, Callable, Type, TypeVar, cast
@@ -11,13 +11,10 @@ from bs4 import BeautifulSoup
 from patchright import async_api
 from patchright.async_api import TimeoutError
 
-from classes import LoggingInfo
-from config import Site
-
 logger = logging.getLogger("onadaily")
 
 
-def check_already_stamp(site: Site, source: str) -> bool:
+def check_already_stamp(sitename: str, source: str) -> bool:
     soup = BeautifulSoup(source, "html.parser")
 
     week, day = num_of_month_week()
@@ -29,7 +26,7 @@ def check_already_stamp(site: Site, source: str) -> bool:
 
     todaysoup = weeksoup[day - 1]
 
-    if site.name != "banana":
+    if sitename != "banana":
         if todaysoup.find("img", {"alt": "출석"}) is None:
             return False
         else:
@@ -56,36 +53,6 @@ def num_of_month_week() -> tuple[int, int]:
     dayofweeknum = (date.weekday() + 1) % 7 + 1
 
     return weeknum, dayofweeknum
-
-
-if getattr(sys, "frozen", False):
-    app_path = os.path.dirname(sys.executable)
-else:
-    app_path = os.path.dirname(os.path.abspath(__file__))
-
-LOG_DIR = os.path.join(app_path, "logs")
-if not os.path.exists(LOG_DIR):
-    os.makedirs(LOG_DIR)
-
-
-def save_log(logginginfo: LoggingInfo) -> str:
-    try:
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
-
-        prefix = "error" if logginginfo.iserror else "log"
-
-        filename = os.path.join(LOG_DIR, f"{prefix}_{logginginfo.sitename}_{timestamp}.txt")
-
-        with open(filename, "w", encoding="utf-8") as f:
-            f.write(str(logginginfo))
-
-    except Exception as ex:
-        print(f"로깅 실패 : {ex}")
-        print(f"원본 오류 : \n{logginginfo.stacktrace}")
-
-    logginginfo.saved = True
-    print(f"로그 저장됨: {filename}")
-    return filename
 
 
 T = TypeVar("T", bound=Callable[..., Any])
