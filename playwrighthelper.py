@@ -1,10 +1,14 @@
+import logging
 import os
+from typing import Pattern
 from urllib.parse import urlparse
 
-from patchright.async_api import BrowserContext, Page, Playwright
+from patchright.async_api import BrowserContext, Locator, Page, Playwright
 
 import consts
 from config import Site
+
+logger = logging.getLogger("onadaily")
 
 
 async def makebrowser(playwright: Playwright, headless: bool = False) -> BrowserContext:
@@ -22,8 +26,20 @@ async def makebrowser(playwright: Playwright, headless: bool = False) -> Browser
     return browser
 
 
+def locator(
+    page: Page,
+    selector: str,
+    *args,
+    has_text: str | Pattern[str] | None = None,
+    has_not_text: str | Pattern[str] | None = None,
+    has: Locator | None = None,
+    has_not: Locator | None = None,
+) -> Locator:
+    logger.debug(f"locator : {selector}")
+    return page.locator(selector, *args, has_text=has_text, has_not_text=has_not_text, has=has, has_not=has_not)
+
+
 async def remove_cookie(browser: BrowserContext) -> None:
-    all_cookies = await browser.cookies()
     for site_name, site_url in consts.URLS.items():
         parsed_url = urlparse(site_url)
         target_domain = parsed_url.netloc

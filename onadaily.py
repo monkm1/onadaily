@@ -7,8 +7,10 @@ from prettytable import PrettyTable
 from classes import LogCaptureContext, StampResult
 from config import Options, Site
 from errors import AlreadyStamped, HotDealDataNotFoundError, LoginFailedError, StampFailedError
-from playwrighthelper import makebrowser, remove_cookie
-from strategies import get_hotdeal_strategy, get_login_strategy, get_stamp_strategy
+from hotdealstrategies import get_hotdeal_strategy
+from loginstrategies import get_login_strategy
+from playwrighthelper import makebrowser
+from stampstrategies import get_stamp_strategy
 from utils import LoggingInfo, save_log_error
 
 logger = logging.getLogger("onadaily")
@@ -50,8 +52,8 @@ class Onadaily(object):
     async def check(self, browser: BrowserContext, site: Site) -> tuple[StampResult, LogCaptureContext]:
         result = StampResult(site)
         log_capture: LogCaptureContext
-        try:
-            async with LogCaptureContext(logger) as capturer:
+        async with LogCaptureContext(logger) as capturer:
+            try:
                 logger.info(f"== {site.name} ==")
 
                 if not site.enable:
@@ -75,27 +77,28 @@ class Onadaily(object):
                 result.message = "✅ 출석 체크 성공"
                 result.passed = True
 
-        except AlreadyStamped:
-            result.message = "ℹ️ 이미 출첵함"
-            result.passed = True
-        except LoginFailedError as e:
-            captured_logs = log_capture.captured_logs_string if log_capture is not None else None
-            result.message = f"❌ 로그인 중 실패\n\t-{e}"
-            result.iserror = True
-            self.last_exceptions[site] = LoggingInfo(e, site, self.chromeversion, captured_logs)
-        except StampFailedError as e:
-            captured_logs = log_capture.captured_logs_string if log_capture is not None else None
-            result.message = f"❌ 출석체크 중 실패\n\t-{e}"
-            result.iserror = True
-            self.last_exceptions[site] = LoggingInfo(e, site, self.chromeversion, captured_logs)
-        except Exception as e:
-            captured_logs = log_capture.captured_logs_string if log_capture is not None else None
-            result.message = f"❌ 알 수 없는 오류\n\t-{e}"
-            result.iserror = True
-            self.last_exceptions[site] = LoggingInfo(e, site, self.chromeversion, captured_logs)
-        finally:
-            if result.iserror:
-                result.passed = False
+            except AlreadyStamped:
+                result.message = "ℹ️ 이미 출첵함"
+                result.passed = True
+            except LoginFailedError as e:
+                captured_logs = log_capture.captured_logs_string if log_capture is not None else None
+                result.message = f"❌ 로그인 중 실패\n\t-{e}"
+                result.iserror = True
+                self.last_exceptions[site] = LoggingInfo(e, site, self.chromeversion, captured_logs)
+            except StampFailedError as e:
+                captured_logs = log_capture.captured_logs_string if log_capture is not None else None
+                result.message = f"❌ 출석체크 중 실패\n\t-{e}"
+                result.iserror = True
+                self.last_exceptions[site] = LoggingInfo(e, site, self.chromeversion, captured_logs)
+            except Exception as e:
+                captured_logs = log_capture.captured_logs_string if log_capture is not None else None
+                result.message = f"❌ 알 수 없는 오류\n\t-{e}"
+                result.iserror = True
+                self.last_exceptions[site] = LoggingInfo(e, site, self.chromeversion, captured_logs)
+            finally:
+                if result.iserror:
+                    result.passed = False
+                logger.info(result.message)
 
         return result, log_capture
 

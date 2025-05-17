@@ -125,7 +125,7 @@ LOGIN: dict[str, dict[str, str] | dict[str, str | None]] = {
 BTN_STAMP = {
     "onami": "//a[contains(@onclick, 'attend_send')]/img",
     "showdang": "//button[contains(@class, 'btn_attend_check')]",
-    "banana": "//a[contains(@href, 'attendance_check')]",
+    "banana": "//div[contains(@class, 'btn_check')]/a",
     "dingdong": "//a[contains(@onclick, 'attend_send')]",
     "domae": "//a[contains(@onclick, 'attend_send')]",
 }

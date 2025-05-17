@@ -8,6 +8,7 @@ from typing import Any, Callable, Type, TypeVar, cast
 
 import pytz
 from bs4 import BeautifulSoup
+from patchright import async_api
 from patchright.async_api import TimeoutError
 
 from classes import LoggingInfo
@@ -92,11 +93,13 @@ class HandlePlayWrightError:
 
     def __call__(self, func: T) -> T:
         @functools.wraps(func)
-        def wrapper(*args, **kwargs):
+        async def wrapper(*args, **kwargs):
             try:
-                return func(*args, **kwargs)
+                return await func(*args, **kwargs)
             except TimeoutError as ex:
                 raise self.wrap_exception(f"{self.message_prefix}/시간 초과") from ex
+            except async_api.Error as ex:
+                raise self.wrap_exception(f"{self.message_prefix}/플레이라이트 에러") from ex
             except Exception as ex:
                 raise self.wrap_exception(f"{self.message_prefix}/알 수 없는 에러") from ex
 
