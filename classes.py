@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import logging
 import logging.handlers
 import traceback
@@ -40,10 +42,21 @@ class StampResult(object):
         self.site = site
         self.passed = False
         self.iserror = False
-        self.message = ""
+        self.resultmessage = ""
+        self._logginginfo: LoggingInfo | None = None
 
     def __bool__(self) -> bool:
         return self.passed
+
+    @property
+    def logginginfo(self) -> LoggingInfo:
+        if self._logginginfo is None:
+            raise ValueError("logginginfo가 초기화되지 않음")
+        return self._logginginfo
+
+    @logginginfo.setter
+    def logginginfo(self, value: LoggingInfo) -> None:
+        self._logginginfo = value
 
 
 class SaleTable(PrettyTable):
@@ -73,18 +86,20 @@ class SaleTable(PrettyTable):
 class LoggingInfo:
     def __init__(
         self,
-        exception: Exception,
+        exception: Exception | None = None,
         site: Site | None = None,
-        version: str = "Chrome version : N/A",
-        debuglog: str | None = None,
+        version: str = "N/A",
+        logcontext: LogCaptureContext | None = None,
     ) -> None:
         self.now = datetime.now()
-        self.stacktrace = traceback.format_exc()
+        self.logcontext = logcontext
 
-        if DEBUG_MODE:
+        self.iserror = False if exception is None else True
+        self.stacktrace = traceback.format_exc() if self.iserror else "N/A"
+        self.message = str(exception) if self.iserror else "No error"
+
+        if self.iserror and DEBUG_MODE:
             print(self.stacktrace)
-
-        self.message = str(exception)
 
         if site is not None:
             self.sitename = site.name
@@ -93,12 +108,23 @@ class LoggingInfo:
             self.sitename = "None"
             self.sitelogin = "None"
 
-        self.version = version
+        self.version = "Chrome Version : " + version
 
-        if debuglog is not None:
-            self.debuglog = debuglog
+        self.saved = False
+
+    @property
+    def debuglog(self):
+        if self.logcontext is None:
+            return "N/A"
         else:
-            self.debuglog = "N/A"
+            return self.logcontext.captured_logs_string
+
+    @property
+    def printlog(self) -> str:
+        if self.logcontext is None:
+            return ""
+        else:
+            return self.logcontext.captured_print_logs_string
 
     def __str__(self) -> str:
         return (
@@ -127,16 +153,28 @@ class AsyncLogFilter(logging.Filter):
         return active_id == self.capture_id
 
 
+class SiteNameInjector(logging.Filter):
+    def __init__(self, site_name: str | None = None) -> None:
+        super().__init__()
+        self.site_name = site_name if site_name is not None else ""
+
+    def filter(self, record: LogRecord) -> Literal[True]:
+        record.site_name = self.site_name
+        return True
+
+
 class LogCaptureContext:
-    def __init__(self, logger: Logger) -> None:
+    def __init__(self, logger: Logger, site_name: str) -> None:
         self.logger = logger
+        self.site_name = site_name
+
         self.shared_memory_handler: logging.handlers.MemoryHandler
 
         self.captured_logs_records: list[LogRecord] = []
         self.captured_logs_string = ""
         self.captured_print_logs_string = ""
 
-        self.formatter = logging.Formatter("%(asctime)s - %(module)s - %(message)s")
+        self.formatter = logging.Formatter("%(asctime)s - %(site_name)s:%(module)s - %(message)s")
         self.printformatter = logging.Formatter("%(message)s")
 
         self.capture_id = str(uuid.uuid4())
@@ -149,6 +187,7 @@ class LogCaptureContext:
         )
 
         self.shared_memory_handler.addFilter(AsyncLogFilter(self.capture_id))
+        self.shared_memory_handler.addFilter(SiteNameInjector(self.site_name))
 
         self.logger.addHandler(self.shared_memory_handler)
 

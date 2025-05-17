@@ -51,7 +51,7 @@ async def remove_cookie(browser: BrowserContext) -> None:
 
 
 async def check_logined(page: Page, site: Site) -> bool:
-    element = page.locator(site.login_check_xpath)
+    element = locator(page, site.login_check_xpath)
 
     if await element.count() == 0:
         return False
@@ -60,5 +60,5 @@ async def check_logined(page: Page, site: Site) -> bool:
 
 
 async def wait_login(page: Page, site: Site) -> None:
-    element = page.locator(site.login_check_xpath)
+    element = locator(page, site.login_check_xpath)
     await element.wait_for(state="visible")

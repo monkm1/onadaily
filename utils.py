@@ -68,10 +68,13 @@ if not os.path.exists(LOG_DIR):
     os.makedirs(LOG_DIR)
 
 
-def save_log_error(logginginfo: LoggingInfo) -> str:
+def save_log(logginginfo: LoggingInfo) -> str:
     try:
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
-        filename = os.path.join(LOG_DIR, f"error_{logginginfo.sitename}_{timestamp}.txt")
+
+        prefix = "error" if logginginfo.iserror else "log"
+
+        filename = os.path.join(LOG_DIR, f"{prefix}_{logginginfo.sitename}_{timestamp}.txt")
 
         with open(filename, "w", encoding="utf-8") as f:
             f.write(str(logginginfo))
@@ -80,6 +83,8 @@ def save_log_error(logginginfo: LoggingInfo) -> str:
         print(f"로깅 실패 : {ex}")
         print(f"원본 오류 : \n{logginginfo.stacktrace}")
 
+    logginginfo.saved = True
+    print(f"로그 저장됨: {filename}")
     return filename
 
 

@@ -16,7 +16,7 @@ if __name__ == "__main__":
 
         if DEBUG_MODE:
             handler = logging.StreamHandler()
-            formatter = logging.Formatter("%(asctime)s - %(module)s - %(message)s")
+            formatter = logging.Formatter("%(module)s - %(message)s")
             handler.setFormatter(formatter)
             logger.addHandler(handler)
 

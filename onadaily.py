@@ -6,17 +6,18 @@ from prettytable import PrettyTable
 
 from classes import LogCaptureContext, StampResult
 from config import Options, Site
+from consts import ALWAYS_SAVE_LOG
 from errors import AlreadyStamped, HotDealDataNotFoundError, LoginFailedError, StampFailedError
 from hotdealstrategies import get_hotdeal_strategy
 from loginstrategies import get_login_strategy
 from playwrighthelper import makebrowser
 from stampstrategies import get_stamp_strategy
-from utils import LoggingInfo, save_log_error
+from utils import LoggingInfo, save_log
 
 logger = logging.getLogger("onadaily")
 
 
-class Onadaily(object):
+class Onadaily(object):  # TODO: 동시 실행 옵션 추가, 버전 정보 추가
     def __init__(self) -> None:
         self.passed: dict[Site, StampResult] = {}
         self.options = Options()
@@ -26,7 +27,7 @@ class Onadaily(object):
         self.keywordnoti = PrettyTable()
         self.keywordnoti.field_names = ["사이트", "품명", "정상가", "할인가"]
 
-        self.last_exceptions: dict[Site, LoggingInfo] = {}
+        self.latest_logginginfo: dict[Site, LoggingInfo] = {}
 
         self.chromeversion = "N/A"
 
@@ -49,20 +50,22 @@ class Onadaily(object):
                     if len(keywordproducts) > 0:
                         self.keywordnoti.add_rows(keywordproducts, divider=True)
 
-    async def check(self, browser: BrowserContext, site: Site) -> tuple[StampResult, LogCaptureContext]:
+    async def check(self, browser: BrowserContext, site: Site, try_count: int) -> StampResult:
         result = StampResult(site)
         log_capture: LogCaptureContext
-        async with LogCaptureContext(logger) as capturer:
-            try:
+        page: Page | None = None
+        exception: Exception | None = None
+        try:
+            async with LogCaptureContext(logger, site.name) as capturer:
                 logger.info(f"== {site.name} ==")
 
                 if not site.enable:
                     logger.info("skip")
-                    result.message = "스킵"
+                    result.resultmessage = "스킵"
                     result.passed = True
-                    return result, capturer
+                    return result
 
-                logger.debug(f"=== {site.name} 출석 체크 시작 ===")
+                logger.info(f"{try_count}번째 시도")
                 log_capture = capturer
                 page = await browser.new_page()
                 login_strategy = get_login_strategy(page, site)
@@ -74,33 +77,33 @@ class Onadaily(object):
                 stamp_strategy = get_stamp_strategy(page, site)
                 await stamp_strategy.stamp(site)
 
-                result.message = "✅ 출석 체크 성공"
+                result.resultmessage = "✅ 출석 체크 성공"
                 result.passed = True
+                logger.info(result.resultmessage)
 
-            except AlreadyStamped:
-                result.message = "ℹ️ 이미 출첵함"
-                result.passed = True
-            except LoginFailedError as e:
-                captured_logs = log_capture.captured_logs_string if log_capture is not None else None
-                result.message = f"❌ 로그인 중 실패\n\t-{e}"
-                result.iserror = True
-                self.last_exceptions[site] = LoggingInfo(e, site, self.chromeversion, captured_logs)
-            except StampFailedError as e:
-                captured_logs = log_capture.captured_logs_string if log_capture is not None else None
-                result.message = f"❌ 출석체크 중 실패\n\t-{e}"
-                result.iserror = True
-                self.last_exceptions[site] = LoggingInfo(e, site, self.chromeversion, captured_logs)
-            except Exception as e:
-                captured_logs = log_capture.captured_logs_string if log_capture is not None else None
-                result.message = f"❌ 알 수 없는 오류\n\t-{e}"
-                result.iserror = True
-                self.last_exceptions[site] = LoggingInfo(e, site, self.chromeversion, captured_logs)
-            finally:
-                if result.iserror:
-                    result.passed = False
-                logger.info(result.message)
+        except AlreadyStamped:
+            result.resultmessage = "ℹ️ 이미 출첵함"
+            result.passed = True
+        except LoginFailedError as e:
+            result.resultmessage = f"❌ 로그인 중 실패\n\t-{e}"
+            result.iserror = True
+            exception = e
+        except StampFailedError as e:
+            result.resultmessage = f"❌ 출석체크 중 실패\n\t-{e}"
+            result.iserror = True
+            exception = e
+        except Exception as e:
+            result.resultmessage = f"❌ 알 수 없는 오류\n\t-{e}"
+            result.iserror = True
+            exception = e
+        finally:
+            if result.iserror:
+                result.passed = False
+            result.logginginfo = LoggingInfo(exception, site, self.chromeversion, log_capture)
+            if page is not None and not page.is_closed():
+                await page.close()
 
-        return result, log_capture
+        return result
 
     async def run(self) -> None:
         retry_count = 0
@@ -112,24 +115,32 @@ class Onadaily(object):
             retry_count += 1
             order = self.options.common.order
 
+            print("브라우저 초기화 중...")
             async with async_playwright() as p:
                 browser = await makebrowser(p, headless=self.options.common.headless)
                 browser.set_default_timeout(self.options.common.waittime * 1000)
-                # await remove_cookie(browser)
 
+                # await remove_cookie(browser)
+                print("브라우저 초기화 완료")
                 jobs = []
 
                 for site in order:
                     if self.passed[site]:
                         continue
-                    jobs.append(self.check(browser, site))
+                    jobs.append(self.check(browser, site, retry_count))
 
-                results: list[tuple[StampResult, LogCaptureContext]] = await asyncio.gather(*jobs)
+                results: list[StampResult] = await asyncio.gather(*jobs)
 
             print(f"========== {retry_count}회차 결과 ==========")
-            for result, log in results:
+            for result in results:
                 self.passed[result.site] = result
-                print(log.captured_print_logs_string)
+                print(result.logginginfo.printlog)
+
+                if result.iserror:
+                    self.latest_logginginfo[result.site] = result.logginginfo
+
+                if ALWAYS_SAVE_LOG:
+                    save_log(result.logginginfo)
 
         if all(self.passed.values()):
             if len(self.options.common.keywordnoti) > 0:
@@ -145,11 +156,10 @@ class Onadaily(object):
             print(f"실패한 사이트 : {[str(site) for site in failedsites]}")
 
             for failedsite in failedsites:
-                if failedsite in self.last_exceptions:
-                    log_file_name = save_log_error(self.last_exceptions[failedsite])
-
-                    print(f"로그 저장됨: {log_file_name}")
+                if failedsite in self.latest_logginginfo:
+                    save_log(self.latest_logginginfo[failedsite])
 
         print("======결과======")
+        print(f"시도 횟수: {retry_count}")
         for result in self.passed.values():
-            print(f"사이트 : {result.site.name} / {result.message}")
+            print(f"사이트 : {result.site.name} / {result.resultmessage}")

@@ -3,6 +3,7 @@ import logging
 
 from patchright.async_api import Dialog, Page
 
+import playwrighthelper
 from config import Site
 from errors import AlreadyStamped, ParseError, StampFailedError
 from utils import HandlePlayWrightError, check_already_stamp
@@ -35,12 +36,12 @@ class BaseStampStrategy(abc.ABC):
 
     @HandlePlayWrightError(StampFailedError, "달력 가져오기 실패")
     async def _get_calendar_source(self, site: Site) -> str:
-        calender = self.working_page.locator(site.stamp_calendar)
+        calender = playwrighthelper.locator(self.working_page, site.stamp_calendar)
         return await calender.inner_html()
 
     @HandlePlayWrightError(StampFailedError, "출석 체크 버튼 클릭 실패")
     async def _click_stamp_button(self, site: Site):
-        btn_stamp = self.working_page.locator(site.btn_stamp)
+        btn_stamp = playwrighthelper.locator(self.working_page, site.btn_stamp)
         await btn_stamp.click()
 
     @HandlePlayWrightError(StampFailedError, "다이얼로그 처리 중 실패")

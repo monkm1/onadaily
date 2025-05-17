@@ -1,4 +1,5 @@
 # consts
+import argparse
 import logging
 import os
 import sys
@@ -8,23 +9,26 @@ logger = logging.getLogger("onadaily")
 DEBUG_MODE = False
 CONFIG_FILE_NAME = "onadaily.yaml"
 DEFAULT_CONFIG_FILE = "onadailyorigin.yaml"
+ALWAYS_SAVE_LOG = False
 
+parser = argparse.ArgumentParser()
+parser.add_argument("-d", "--debug", action="store_true")
+parser.add_argument("-f", "--file", action="store", default=None)
+parser.add_argument("-s", "--save_log", action="store_true", default=False)
+args = parser.parse_args()
 
-if len(sys.argv) > 1 and sys.argv[1] == "test":
+if args.debug:
     DEBUG_MODE = True
-    CONFIG_FILE_NAME = "test.yaml"
-elif len(sys.argv) > 1 and sys.argv[1] == "testquiet":
-    CONFIG_FILE_NAME = "test.yaml"
 
+if args.file is not None:
+    CONFIG_FILE_NAME = args.file
+
+if args.save_log:
+    ALWAYS_SAVE_LOG = True
 
 if getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS"):
     DEFAULT_CONFIG_FILE = os.path.join(sys._MEIPASS, DEFAULT_CONFIG_FILE)
     logger.debug(f"pyinstaller로 빌드된 경우, 기본 설정 파일 경로: {DEFAULT_CONFIG_FILE}")
-
-SHOW_CREDENTIALS = False
-
-if DEBUG_MODE:
-    SHOW_CREDENTIALS = True
 
 
 SITE_NAMES = ["onami", "showdang", "banana", "dingdong", "domae"]

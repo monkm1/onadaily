@@ -20,10 +20,12 @@ class BaseLoginStrategy(abc.ABC):
         logger.debug(f"{site.name} 로그인 시작 URL : {site.login_url}")
         logger.debug(f"{site.name} 로그인 방식 : {site.login}")
 
-        await self._get_login_url(site)
+        await self._goto_main_url(site)
+
         if await playwrighthelper.check_logined(self.working_page, site):
             logger.debug(f"{site.name} 로그인 이미 되어있음")
             return
+        await self._goto_login_url(site)
 
         await self._prepare_login(site)
         await self._type_id_password(site)
@@ -32,8 +34,12 @@ class BaseLoginStrategy(abc.ABC):
         await self._wait_login(site)
         await self._final_login(site)
 
+    @HandlePlayWrightError(LoginFailedError, "메인 페이지 URL 열기 실패")
+    async def _goto_main_url(self, site: Site) -> None:
+        await self.working_page.goto(site.main_url)
+
     @HandlePlayWrightError(LoginFailedError, "로그인 URL 열기 실패")
-    async def _get_login_url(self, site: Site) -> None:
+    async def _goto_login_url(self, site: Site) -> None:
         await self.working_page.goto(site.login_url)
 
     @HandlePlayWrightError(LoginFailedError, "로그인 준비 중 실패")
