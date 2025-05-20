@@ -22,12 +22,12 @@ jobs:
           cache: 'pipenv'
       - name: Install pipenv
         run: |
-          echo $env:PROCESSOR_ARCHITECTURE
-          python -c "import platform; print(platform.architecture())"
           pip install pipenv
       - name: Install dependencies
         run: |
-          pipenv install
+          $pythonpath = (Get-Command python).Source
+          Write-Host "Python path : $pythonpath"
+          pipenv install --python $pythonpath
           pipenv run pip install pyinstaller
           pipenv run pip install pip-licenses
       - name: checkout bootloader
