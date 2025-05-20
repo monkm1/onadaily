@@ -8,6 +8,9 @@ on:
 jobs:
   windows:
     runs-on: windows-latest
+    defaults:
+      run:
+        shell: pwsh
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -24,8 +27,20 @@ jobs:
           pipenv install
           pipenv run pip install pyinstaller
           pipenv run pip install pip-licenses
-        shell: powershell
+        shell: pwsh
 
+      - name: checkout bootloader
+        uses: actions/checkout@v4
+        with:
+          repository: monkm1/pyinstaller_bootloader
+          path: ./bootloaders
+          ssh-key: ${{ secrets.BOOTLOADER_REPO_DEPLOY_KEY }}
+      - name: Apply custom bootloader
+        run: |
+          BOOTLOADER_PATH = "./bootloaders"
+          SITE_PACKAGE_LIB=$(pipenv run python -c "import sysconfig; print(sysconfig.get_paths()['purelib'])")
+          
+        shell: bash
       - name: Generate dependency licenses
         run: pipenv run pip-licenses > depend-licenses.txt
       - name: Build onefile
@@ -35,7 +50,7 @@ jobs:
           cp LICENSE dist/LICENSE.txt
           Compress-Archive .\dist\* onadaily-windows-onefile.zip
           ls
-        shell: powershell
+        shell: pwsh
       - name: Build
         run: |
           pipenv run pyinstaller main.py --name onadaily --add-data onadailyorigin.yaml:. -y --collect-data patchright

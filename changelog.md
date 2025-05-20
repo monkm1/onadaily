@@ -2,6 +2,8 @@
 * Selenium -> Playwright 로 변경
   * 더 빠르고, 병렬로 처리합니다.
   * 소셜 로그인도 headless에서 동작합니다.
+* 새로운 옵션 : concurrent
+  * *true*이면, 출석체크를 동시에 진행합니다. *false* 이면, 기존처럼 순서대로 진행합니다.
 
 # v1.5.0
 ## 수정

@@ -131,6 +131,7 @@ class Onadaily(object):  # TODO: 버전 정보 추가
                         continue
                     jobs.append(self.check(browser, site, retry_count))
 
+                print("출석 체크 진행 중...")
                 if self.options.common.concurrent:
                     results: list[StampResult] = await asyncio.gather(*jobs)
                 else:
@@ -140,6 +141,7 @@ class Onadaily(object):  # TODO: 버전 정보 추가
 
             if self.options.common.concurrent:
                 print(f"========== {retry_count}회차 결과 ==========")
+
             for result in results:
                 self.passed[result.site] = result
                 if self.options.common.concurrent:

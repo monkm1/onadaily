@@ -39,7 +39,7 @@ common:
   # 아이디/비밀번호 저장소입니다. keyring, lagacy 중 하나를 선택합니다. lagacy는 이 파일 각 사이트 id/pasword에 직접 입력합니다.
   # 주의: lagacy는 보안이 취약합니다. keyring을 추천합니다.
   namespace: Onadaily # 고급 사용자용: keyring을 사용할 때 저장소 이름입니다. 이 이름으로 저장소에 접근합니다.
-
+  concurrent: true # true이면, 출석체크를 동시에 진행합니다.
 onami:
   enable: true
   login: default
@@ -78,6 +78,7 @@ common:
   # 아이디/비밀번호 저장소입니다. keyring, lagacy 중 하나를 선택합니다. lagacy는 이 파일 각 사이트 id/pasword에 직접 입력합니다.
   # 주의: lagacy는 보안이 취약합니다. keyring을 추천합니다.
   namespace: Onadaily # 고급 사용자용: keyring을 사용할 때 저장소 이름입니다. 이 이름으로 저장소에 접근합니다.
+  concurrent: true # true이면, 출석체크를 동시에 진행합니다.
 onami:
   enable: true
   login: kakao # 카카오 로그인 사용
@@ -108,7 +109,7 @@ common:
   # 아이디/비밀번호 저장소입니다. keyring, lagacy 중 하나를 선택합니다. lagacy는 이 파일 각 사이트 id/pasword에 직접 입력합니다.
   # 주의: lagacy는 보안이 취약합니다. keyring을 추천합니다.
   namespace: Onadaily # 고급 사용자용: keyring을 사용할 때 저장소 이름입니다. 이 이름으로 저장소에 접근합니다.
-
+  concurrent: true # true이면, 출석체크를 동시에 진행합니다.
 onami:
   enable: true
   login: default
