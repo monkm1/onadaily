@@ -27,8 +27,6 @@ jobs:
           pipenv install
           pipenv run pip install pyinstaller
           pipenv run pip install pip-licenses
-        shell: pwsh
-
       - name: checkout bootloader
         uses: actions/checkout@v4
         with:
@@ -37,10 +35,17 @@ jobs:
           ssh-key: ${{ secrets.BOOTLOADER_REPO_DEPLOY_KEY }}
       - name: Apply custom bootloader
         run: |
-          BOOTLOADER_PATH = "./bootloaders"
-          SITE_PACKAGE_LIB=$(pipenv run python -c "import sysconfig; print(sysconfig.get_paths()['purelib'])")
-          
-        shell: bash
+          $custom_bootloader_path = "./bootloaders"
+          $sitepackagelib = Invoke-Expression "pipenv run python -c ""import sysconfig; print(sysconfig.get_paths()['purelib'])"""
+          Join-Path $sitepackagelib "Pyinstaller\bootloader" | ls
+          $pyinstaller_bootloader_dir = Join-Path $sitepackagelib "Pyinstaller\bootloader\windows-64bit-intel"
+
+          if (Test-Path $pyinstaller_bootloader_dir) {
+            Copy-Item -Path (Join-Path $custom_bootloader_path "*") -Destination $pyinstaller_bootloader_dir -Force
+          } else {
+           Write-Error "부트로더 없음 : $pyinstaller_bootloader_dir
+           exit 1
+           }
       - name: Generate dependency licenses
         run: pipenv run pip-licenses > depend-licenses.txt
       - name: Build onefile
@@ -50,7 +55,6 @@ jobs:
           cp LICENSE dist/LICENSE.txt
           Compress-Archive .\dist\* onadaily-windows-onefile.zip
           ls
-        shell: pwsh
       - name: Build
         run: |
           pipenv run pyinstaller main.py --name onadaily --add-data onadailyorigin.yaml:. -y --collect-data patchright
