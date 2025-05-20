@@ -43,7 +43,7 @@ jobs:
           if (Test-Path $pyinstaller_bootloader_dir) {
             Copy-Item -Path (Join-Path $custom_bootloader_path "*") -Destination $pyinstaller_bootloader_dir -Force
           } else {
-           Write-Error "부트로더 없음 : $pyinstaller_bootloader_dir
+           Write-Error "부트로더 없음 : $pyinstaller_bootloader_dir"
            exit 1
            }
       - name: Generate dependency licenses
