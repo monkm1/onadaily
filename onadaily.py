@@ -1,11 +1,12 @@
 import asyncio
 import logging
+import traceback
 from typing import Awaitable
 
 from patchright.async_api import BrowserContext, Page, async_playwright
 from prettytable import PrettyTable
 
-from classes import StampResult
+from classes import ConsoleWorkingAnimation, StampResult
 from config import Options, Site
 from consts import ALWAYS_SAVE_LOG
 from errors import AlreadyStamped, HotDealDataNotFoundError, LoginFailedError, StampFailedError
@@ -37,6 +38,7 @@ class Onadaily(object):  # TODO: 버전 정보 추가
             try:
                 hotdeal_strategy = get_hotdeal_strategy(site)
                 if normalize_url(page.url) != normalize_url(site.main_url):
+                    logger.debug(f"{site.name} 핫딜 파싱을 위해 메인 페이지로 이동: {site.main_url}")
                     await page.goto(site.main_url)
                 table = hotdeal_strategy.get_hotdeal_info(await page.content(), site)
             except HotDealDataNotFoundError as e:
@@ -54,11 +56,13 @@ class Onadaily(object):  # TODO: 버전 정보 추가
 
     async def check(self, browser: BrowserContext, site: Site, try_count: int) -> StampResult:
         result = StampResult(site)
-        log_capture: LogCaptureContext
+        log_capture: LogCaptureContext | None = None
         page: Page | None = None
         exception: Exception | None = None
+        error_traceback = "N/A"
         try:
             async with LogCaptureContext(logger, site.name) as capturer:
+                log_capture = capturer
                 logger.info(f"== {site.name} ==")
 
                 if not site.enable:
@@ -68,7 +72,7 @@ class Onadaily(object):  # TODO: 버전 정보 추가
                     return result
 
                 logger.info(f"{try_count}번째 시도")
-                log_capture = capturer
+
                 page = await browser.new_page()
                 login_strategy = get_login_strategy(page, site)
                 await login_strategy.login(site)
@@ -81,71 +85,96 @@ class Onadaily(object):  # TODO: 버전 정보 추가
 
                 result.resultmessage = "✅ 출석 체크 성공"
                 result.passed = True
-                logger.info(result.resultmessage)
 
         except AlreadyStamped:
             result.resultmessage = "ℹ️ 이미 출첵함"
             result.passed = True
-        except LoginFailedError as e:
-            result.resultmessage = f"❌ 로그인 중 실패\n\t-{e}"
+        except (LoginFailedError, StampFailedError) as e:
+            result.resultmessage = str(e)
             result.iserror = True
             exception = e
-        except StampFailedError as e:
-            result.resultmessage = f"❌ 출석체크 중 실패\n\t-{e}"
-            result.iserror = True
-            exception = e
+            error_traceback = traceback.format_exc()
         except Exception as e:
             result.resultmessage = f"❌ 알 수 없는 오류\n\t-{e}"
             result.iserror = True
             exception = e
+            error_traceback = traceback.format_exc()
         finally:
             if result.iserror:
                 result.passed = False
-            result.logginginfo = LoggingInfo(exception, site.name, site.login, self.chromeversion, log_capture)
+            result.logginginfo = LoggingInfo(
+                exception, error_traceback, site.name, site.login, self.chromeversion, log_capture
+            )
             if page is not None and not page.is_closed():
                 await page.close()
 
+            logger.info(result.resultmessage)
+            result.logginginfo.add_message(result.resultmessage)
+
         return result
+
+    async def _run_concurrently(self, jobs) -> list[StampResult]:
+        results = []
+        results_with_exceptions: list[StampResult | Exception] = await asyncio.gather(*jobs, return_exceptions=True)
+        for exornot in results_with_exceptions:
+            if isinstance(exornot, Exception):
+                raise exornot
+            else:
+                results.append(exornot)
+
+        return results
+
+    async def _run_sequentially(self, jobs) -> list[StampResult]:
+        results = []
+
+        for job in jobs:
+            results.append(await job)
+
+        return results
 
     async def run(self) -> None:
         retry_count = 0
         max_retries = self.options.common.retrytime if self.options.common.autoretry else 1
-
+        isconcurrent = self.options.common.concurrent
         print(f"최대 재시도 횟수 : {max_retries}")
 
         while retry_count < max_retries and not all(self.passed.values()):
             retry_count += 1
             order = self.options.common.order
+            jobs: list[Awaitable] = []
 
-            print("브라우저 초기화 중...")
             async with async_playwright() as p:
-                browser = await makebrowser(p, headless=self.options.common.headless)
-                browser.set_default_timeout(self.options.common.waittime * 1000)
+                async with ConsoleWorkingAnimation(
+                    "브라우저 초기화 중",
+                    "브라우저 초기화 완료",
+                    "브라우저 초기화 중 오류 발생",
+                    isconcurrent,
+                ):
+                    browser = await makebrowser(p, headless=self.options.common.headless)
+                    browser.set_default_timeout(self.options.common.waittime * 1000)
 
                 # await remove_cookie(browser)
-                print("브라우저 초기화 완료")
-                jobs: list[Awaitable] = []
 
                 for site in order:
                     if self.passed[site]:
                         continue
                     jobs.append(self.check(browser, site, retry_count))
 
-                print("출석 체크 진행 중...")
-                if self.options.common.concurrent:
-                    results: list[StampResult] = await asyncio.gather(*jobs)
-                else:
-                    results = []
-                    for job in jobs:
-                        results.append(await job)
+                async with ConsoleWorkingAnimation(
+                    "출석 체크 진행 중", "출석 체크 작업 완료", "출석 체크 중 오류 발생", isconcurrent
+                ):
+                    if isconcurrent:
+                        results = await self._run_concurrently(jobs)
+                    else:
+                        results = await self._run_sequentially(jobs)
 
-            if self.options.common.concurrent:
-                print(f"========== {retry_count}회차 결과 ==========")
+                if isconcurrent:
+                    print(f"========== {retry_count}회차 결과 ==========")
+                    for result in results:
+                        print(result.logginginfo.printlog)
 
             for result in results:
                 self.passed[result.site] = result
-                if self.options.common.concurrent:
-                    print(result.logginginfo.printlog)
 
                 if result.iserror:
                     self.latest_logginginfo[result.site] = result.logginginfo

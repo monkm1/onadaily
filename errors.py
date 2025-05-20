@@ -7,11 +7,15 @@ class ParseError(Exception):
 
 
 class LoginFailedError(Exception):
-    pass
+    def __init__(self, message) -> None:
+        message = f"❌ 로그인 중 실패\n\t-{message}"
+        super().__init__(message)
 
 
 class StampFailedError(Exception):
-    pass
+    def __init__(self, message) -> None:
+        message = f"❌ 출석체크 중 실패\n\t-{message}"
+        super().__init__(message)
 
 
 class AlreadyStamped(Exception):

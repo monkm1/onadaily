@@ -4,7 +4,6 @@ import logging
 import logging.handlers
 import os
 import sys
-import traceback
 import uuid
 from contextvars import ContextVar
 from datetime import datetime
@@ -29,6 +28,7 @@ class LoggingInfo:
     def __init__(
         self,
         exception: Exception | None = None,
+        error_traceback: str = "N/A",
         site_name: str = "N/A",
         site_login: str = "N/A",
         version: str = "N/A",
@@ -38,7 +38,7 @@ class LoggingInfo:
         self.logcontext = logcontext
 
         self.iserror = False if exception is None else True
-        self.stacktrace = traceback.format_exc() if self.iserror else "N/A"
+        self.stacktrace = error_traceback
         self.message = str(exception) if self.iserror else "No error"
 
         if self.iserror and DEBUG_MODE:
@@ -65,12 +65,20 @@ class LoggingInfo:
         else:
             return self.logcontext.captured_print_logs_string
 
+    def add_message(self, msg: str) -> None:
+        if self.logcontext is None:
+            return
+        else:
+            self.logcontext.captured_print_logs_string += f"\n{msg}"
+            self.logcontext.captured_logs_string += f"\n{msg}"
+
     def __str__(self) -> str:
         return (
             f"{self.now}\n\n"
             f"{self.message}\n"
             f"sitename : {self.sitename}\n"
             f"login : {self.sitelogin}\n\n"
+            f"====== STACKTRACE ======\n"
             f"{self.stacktrace}\n\n"
             f"====== DEBUG LOG ======\n"
             f"{self.debuglog}\n"
