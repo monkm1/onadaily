@@ -50,9 +50,9 @@ async def remove_cookie(browser: BrowserContext) -> None:
         await browser.clear_cookies(domain=target_domain)
 
 
-async def check_logined(page: Page, site: Site) -> bool:
+async def check_logined(page: Page, site: Site) -> tuple[bool, Locator]:
     element = locator(page, site.login_check_xpath)
-    return await element.count() > 0
+    return await element.count() > 0, element
 
 
 async def wait_login(page: Page, site: Site) -> None:

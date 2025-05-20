@@ -1,7 +1,7 @@
 import abc
 import logging
 
-from patchright.async_api import Page
+from patchright.async_api import Locator, Page
 
 import playwrighthelper
 from config import Site
@@ -21,9 +21,11 @@ class BaseLoginStrategy(abc.ABC):
         logger.debug(f"{site.name} 로그인 방식 : {site.login}")
 
         await self._goto_main_url(site)
-
-        if await playwrighthelper.check_logined(self.working_page, site):
+        await self.working_page.reload()  # 가짜 로그인(실제로는 로그인 상태 아님) 방지용
+        islogined, logoutbtn = await playwrighthelper.check_logined(self.working_page, site)
+        if islogined:
             logger.debug(f"{site.name} 로그인 이미 되어있음")
+            # await self._logout(site, logoutbtn)
             return
         await self._goto_login_url(site)
 
@@ -34,12 +36,19 @@ class BaseLoginStrategy(abc.ABC):
         await self._wait_login(site)
         await self._final_login(site)
 
+    @HandlePlayWrightError(LoginFailedError, "로그아웃 중 실패")
+    async def _logout(self, site: Site, logoutbtn: Locator) -> None:
+        async with self.working_page.expect_navigation(url=site.main_url):
+            await logoutbtn.click()
+
     @HandlePlayWrightError(LoginFailedError, "메인 페이지 URL 열기 실패")
     async def _goto_main_url(self, site: Site) -> None:
+        logger.debug(f"{site.name} 메인 페이지로 이동: {site.main_url}")
         await self.working_page.goto(site.main_url)
 
     @HandlePlayWrightError(LoginFailedError, "로그인 URL 열기 실패")
     async def _goto_login_url(self, site: Site) -> None:
+        logger.debug(f"{site.name} 로그인 페이지로 이동: {site.login_url}")
         await self.working_page.goto(site.login_url)
 
     @HandlePlayWrightError(LoginFailedError, "로그인 준비 중 실패")
@@ -137,11 +146,20 @@ class BananaLoginStrategy(BaseLoginStrategy):
         self.working_page = self.tmp_page
 
 
+class DingdongLoginStrategy(BaseLoginStrategy):
+    @HandlePlayWrightError(LoginFailedError, "로그아웃 중 실패")
+    async def _logout(self, site: Site, logoutbtn: Locator) -> None:
+        await logoutbtn.click()
+        await self.working_page.goto(site.main_url)
+
+
 def get_login_strategy(page: Page, site: Site) -> BaseLoginStrategy:
     match site.name:
         case "showdang":
             return ShowDangLoginStrategy(page)
         case "banana":
             return BananaLoginStrategy(page)
+        case "dingdong":
+            return DingdongLoginStrategy(page)
         case _:
             return DefaultLoginStrategy(page)

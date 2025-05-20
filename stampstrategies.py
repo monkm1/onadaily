@@ -32,6 +32,7 @@ class BaseStampStrategy(abc.ABC):
 
     @HandlePlayWrightError(StampFailedError, "출석 체크 준비 중 실패")
     async def _prepare_stamp(self, site: Site) -> None:
+        logger.debug(f"{site.name} 출첵 페이지로 이동: {site.stamp_url}")
         await self.working_page.goto(site.stamp_url)
 
     @HandlePlayWrightError(StampFailedError, "달력 가져오기 실패")
