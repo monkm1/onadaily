@@ -22,6 +22,8 @@ jobs:
           cache: 'pipenv'
       - name: Install pipenv
         run: |
+          echo $env:PROCESSOR_ARCHITECTURE
+          python -c "import platform; print(platform.architecture())"
           pip install pipenv
       - name: Install dependencies
         run: |
