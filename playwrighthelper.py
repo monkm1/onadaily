@@ -3,7 +3,7 @@ import os
 from typing import Pattern
 from urllib.parse import urlparse, urlsplit
 
-from patchright.async_api import BrowserContext, Locator, Page, Playwright
+from patchright.async_api import BrowserContext, Dialog, Locator, Page, Playwright
 
 import consts
 from config import Site
@@ -11,7 +11,7 @@ from config import Site
 logger = logging.getLogger("onadaily")
 
 
-async def makebrowser(playwright: Playwright, headless: bool = False) -> BrowserContext:
+async def make_browser(playwright: Playwright, headless: bool = False) -> BrowserContext:
     datadir = os.path.abspath("./userdata")
 
     user_agent = playwright.devices["Desktop Chrome"]["user_agent"]
@@ -24,6 +24,16 @@ async def makebrowser(playwright: Playwright, headless: bool = False) -> Browser
         user_agent=user_agent,
     )
     return browser
+
+
+async def make_page(browser: BrowserContext) -> Page:
+    async def handle_dialog(dialog: Dialog) -> None:
+        logger.debug(f"다이얼로그 발생 : {dialog.message}")
+        await dialog.accept()
+
+    page = await browser.new_page()
+    page.on("dialog", handle_dialog)
+    return page
 
 
 def locator(

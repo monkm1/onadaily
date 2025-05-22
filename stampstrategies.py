@@ -47,8 +47,8 @@ class BaseStampStrategy(abc.ABC):
 
     @HandlePlayWrightError(StampFailedError, "다이얼로그 처리 중 실패")
     async def _process_dialog(self, dialog: Dialog) -> None:
+        # 다이얼로그 처리는 별도 핸들러에서 진행하므로 여기서 accept 금지
         logger.info(f"메시지: {dialog.message}")
-        await dialog.accept()
 
 
 class DefaultStampStrategy(BaseStampStrategy):

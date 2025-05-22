@@ -1,25 +1,39 @@
 from __future__ import annotations
 
+import functools
 import logging
 import shutil
+from collections import defaultdict
 from os import path
-from typing import Any, Dict, Optional, get_type_hints
+from typing import TYPE_CHECKING, Any, Callable, DefaultDict, Optional
 
 import yaml
+from attrs import define, field
 
 import consts
 from credential_manager import get_credential, set_credential
 from errors import ConfigError
 from logsupport import add_stream_handler
+from utils import asdict_public, check_yaml_types, get_public_field_names
 
 logger = logging.getLogger("onadaily")
 
+if TYPE_CHECKING:  # for mypy
+    hidden_field = field
+else:
+
+    @functools.wraps(field)
+    def hidden_field(**kwargs):
+        metadata = kwargs.pop("metadata", {})
+        metadata["hidden"] = True
+        return field(metadata=metadata, **kwargs)
+
 
 class Options(object):
-    _instance: Optional["Options"] = None
+    _instance: Optional[Options] = None
     _initialized: bool
 
-    def __new__(cls, *args, **kwargs):
+    def __new__(cls, *args, **kwargs) -> Options:
         if not cls._instance:
             cls._instance = super(Options, cls).__new__(cls, *args, **kwargs)
         return cls._instance
@@ -32,20 +46,48 @@ class Options(object):
         self._initialized = True
         self._file_loaded = False
 
-        self._settings: Dict[str, Dict[str, Any]] = {}
+        self._yaml_dict: DefaultDict[str, DefaultDict[str, Any]]
         self.load_settings()
 
-        self.sites = [Site(site_name, self) for site_name in consts.SITE_NAMES]
-        self.common = _Common(self)  # common에서 self.sites를 참조하기 때문에 self.sites를 먼저 초기화해야 함
+        edited = self._check_update_options()
+
+        self.common = _Common(save_yaml_callback=self.save_yaml, yaml_dict=self._yaml_dict, **self._yaml_dict["common"])
 
         if not self.common.concurrent and not consts.DEBUG_MODE:
             add_stream_handler(logger, logging.INFO)
+        if edited:
+            self.save_yaml()
 
-    def _getoption(self, section: str, option: str) -> Any:
-        if section not in self._settings:
-            raise ValueError("잘못된 옵션 접근")
+    def _check_update_options(self) -> bool:
+        edited = False
+        site_fields = Site.public_fields()
+        for site_name in consts.SITE_NAMES:
+            yaml_fields = set(self._yaml_dict[site_name].keys())
 
-        return self._settings[section][option]
+            for site_field in site_fields:
+                if site_field not in yaml_fields:  # 파일에 값이 없으므로 기본값 사용
+                    edited = True
+
+            for yaml_field in yaml_fields:
+                if yaml_field not in site_fields:
+                    print(f"알 수 없는 옵션 : {site_name}/{yaml_field}. 삭제합니다.")
+                    self._yaml_dict[site_name].pop(yaml_field)
+                    edited = True
+
+        common_fields = get_public_field_names(_Common)
+        yaml_common_fields = set(self._yaml_dict["common"].keys())
+
+        for common_field in common_fields:
+            if common_field not in yaml_common_fields:
+                edited = True
+
+        for yaml_field in yaml_common_fields:
+            if yaml_field not in common_fields:
+                print(f"알 수 없는 옵션 : common/{yaml_field}. 삭제합니다.")
+                self._yaml_dict["common"].pop(yaml_field)
+                edited = True
+
+        return edited
 
     def load_settings(self) -> None:
         if not path.isfile(consts.CONFIG_FILE_NAME):
@@ -53,145 +95,109 @@ class Options(object):
             shutil.copy(consts.DEFAULT_CONFIG_FILE, consts.CONFIG_FILE_NAME)
 
         with open(consts.CONFIG_FILE_NAME, "r", encoding="utf-8") as f:  # load yaml
-            self._settings = dict(yaml.safe_load(f))
-
-        self._check_yaml_valid()
+            self._yaml_dict = defaultdict(defaultdict, yaml.safe_load(f))
 
         self._file_loaded = True
 
-        if self._settings["common"]["credential_storage"] == "lagacy":
-            print("⚠️주의: credential_storage가 lagacy로 설정되어 있습니다.")
-            print("아이디/비밀번호를 파일에 저장합니다. 보안에 주의하세요.")
-            print("암호화된 저장소에 저장하려면 credential_storage를 keyring으로 변경하세요.")
-
-    def datadir_required(self) -> bool:
-        checklist = []
-        for sitename, sitesettings in self._settings.items():
-            if sitename == "common":
-                continue
-
-            if sitesettings["enable"] is True:
-                checklist.append(sitesettings["login"] != "default")
-        return any(checklist)
-
-    def _check_yaml_valid(self) -> None:
-        default_section = {"enable": False, "login": "default", "id": None, "password": None}
-
-        default_common = {
-            "entertoquit": True,
-            "waittime": 5,
-            "showhotdeal": False,
-            "headless": False,
-            "order": ["showdang", "dingdong", "banana", "onami", "domae"],
-            "autoretry": True,
-            "retrytime": 3,
-            "keywordnoti": [],
-            "credential_storage": "keyring",
-            "namespace": "Onadaily",
-            "concurrent": True,
-        }
-
-        common_type_hint = get_type_hints(_Common)
-
-        if len(common_type_hint) + 1 != len(default_common):
-            raise ValueError("타입 힌트 수정해야 함")
-
-        if "common" not in self._settings:  # common 섹션이 없으면 추가
-            self._settings["common"] = {}
-
-        for k, v in default_common.items():  # 기본 common 섹션에서 없는 항목 추가
-            if k not in self._settings["common"]:
-                self._settings["common"][k] = v
-
-        for sitename in consts.SITE_NAMES:
-            if sitename not in self._settings:  # 사이트 섹션이 없으면 추가
-                self._settings[sitename] = default_section.copy()  # 얕은 복사
-                self._settings["common"]["order"].append(sitename)  # 사이트 섹션 추가 시 order에 추가
-
-        # if self.datadir_required():
-        # if self._settings["common"]["headless"]:
-        # raise ConfigError("소셜 로그인과 headless 모드를 같이 사용할 수 없습니다.")
-
-        if self._settings["common"]["credential_storage"] not in ["keyring", "lagacy"]:
-            print("잘못된 credential_storage 설정, 기본값 keyring으로 설정합니다.")
-            self._settings["common"]["credential_storage"] = "keyring"
-
-        for sitename, sitesettings in self._settings.items():
-            if sitename == "common":
-                continue
-
-            if sitesettings["enable"] is True:
-                login = sitesettings["login"]
-                if consts.LOGIN[login][sitename] is None:
-                    raise ConfigError(f"{sitename}의 {login} 로그인은 지원하지 않습니다.")
-
-        order = self._settings["common"]["order"]
-
-        if len(set(order)) != len(consts.SITE_NAMES):
-            raise ConfigError("설정 파일의 order 항목에 중복되거나 누락된 사이트가 있습니다.")
-
-        for s in order:
-            if s not in consts.SITE_NAMES:
-                raise ConfigError("설정 파일의 order 항목에 사이트 철자가 틀렸습니다.")
-
-        self.save_yaml()
-
     def save_yaml(self) -> None:
+        dump = {}
+        dump["common"] = self.common.asdict()
+
+        for site in self.common.order:
+            dump[site.name] = site.asdict()
+
         with open(consts.CONFIG_FILE_NAME, "w", encoding="utf8") as f:
-            yaml.dump(self._settings, f, sort_keys=False, allow_unicode=True)
+            yaml.dump(dump, f, sort_keys=False, allow_unicode=True)
 
 
-class _Common(object):
-    entertoquit: bool
-    waittime: int
-    showhotdeal: bool
-    headless: bool
-    autoretry: bool
-    retrytime: int
-    keywordnoti: list[str]
-    credential_storage: str
-    namespace: str
-    concurrent: bool
+@define()
+class _Common:
+    _order: list[str] = hidden_field(
+        kw_only=True,
+        factory=lambda: ["showdang", "dingdong", "banana", "onami", "domae"],
+    )
+    _yaml_dict: dict[str, Any] = hidden_field(kw_only=True)
+    _save_yaml_callback: Callable[[], None] = hidden_field(kw_only=True)
 
-    def __init__(self, options: Options) -> None:
-        self._order: list["Site"] = []
-        self._options = options
-        for ordername in options._settings["common"]["order"]:
-            for site in options.sites:
-                if site.name == ordername:
-                    self._order.append(site)
+    entertoquit: bool = field(default=True)
+    waittime: int = field(default=10)
+    showhotdeal: bool = field(default=False)
+    headless: bool = field(default=False)
+    order: list[Site] = field(init=False)
+    autoretry: bool = field(default=True)
+    retrytime: int = field(default=3)
+    keywordnoti: list[str] = field(factory=list)
+    namespace: str = field(default="Onadaily", converter=str)
+    concurrent: bool = field(default=True)
 
-    def __getattr__(self, key: str) -> Any:
-        if key == "entertoquit":
-            return self._entertoquit()
-        return self._options._getoption("common", key)
+    def __attrs_post_init__(self) -> None:
+        self.order = []
+        for sitename in self._order:
+            self.order.append(
+                Site(
+                    sitename,
+                    namespace=self.namespace,
+                    save_yaml_callback=self._save_yaml_callback,
+                    **self._yaml_dict[sitename],
+                )
+            )
 
-    @property
-    def order(self) -> list["Site"]:
-        if self._order is None:
-            raise ValueError()
-        return self._order
+        check_yaml_types(self)
 
-    def _entertoquit(self) -> bool:
-        if not self._options._file_loaded:
-            return True
+    def asdict(self) -> dict[str, Any]:
+        return_dict = asdict_public(self)
+        return_dict["order"] = self._order
 
-        if "entertoquit" not in self._options._settings["common"]:
-            return True
-        return self._options._getoption("common", "entertoquit")
+        return return_dict
+
+    @_order.validator
+    def _validator_order(self, attr, value):
+        error = False
+        if not isinstance(value, list):
+            error = True
+        if len(value) != len(consts.SITE_NAMES):
+            error = True
+        else:
+            for sitename in value:
+                if sitename not in consts.SITE_NAMES:
+                    error = True
+
+        if error:
+            raise ConfigError("설정 파일의 order 항목에 누락되거나 잘못된 사이트가 있습니다.")
 
 
-class Site(object):
-    name: str
-    enable: bool
-    login: str
-    id: Optional[str]
-    password: Optional[str]
+@define(eq=False, hash=False, repr=False, str=False)
+class Site:
+    name: str = hidden_field(repr=False)
+    enable: bool = field(default=False)
+    login: str = field(default="default")
+    credential_storage: str = field(default="keyring")
+    _id: Optional[str] = hidden_field(kw_only=True, default=None)
+    _password: Optional[str] = hidden_field(kw_only=True, default=None)
 
-    def __init__(self, sitename: str, options: Options) -> None:
-        self._options = options
+    main_url: str = hidden_field(init=False)
+    stamp_url: str = hidden_field(init=False)
+    login_url: str = hidden_field(init=False)
 
-        self.name = sitename
+    input_id: str = hidden_field(init=False)
+    input_pwd: str = hidden_field(init=False)
+    login_check_xpath: str = hidden_field(init=False)
+
+    btn_stamp: str = hidden_field(init=False)
+    hotdeal_table: str | None = hidden_field(init=False)
+    stamp_calendar: str = hidden_field(init=False)
+
+    btn_login: str = hidden_field(init=False)
+
+    _save_yaml_callback: Callable[[], None] = hidden_field(kw_only=True)
+    _namespace: str = hidden_field(kw_only=True)
+
+    @credential_storage.validator
+    def _check_credential_storage(self, attr, value) -> None:
+        if value not in ["keyring", "lagacy"]:
+            raise ConfigError(f"credential_storage 는 'keyring' 또는 'lagacy'여야 합니다: {value}")
+
+    def __attrs_post_init__(self) -> None:
         self.main_url = consts.URLS[self.name]
         self.stamp_url = consts.STAMP_URLS[self.name]
         self.login_url = consts.LOGIN_URLS[self.name]
@@ -204,32 +210,65 @@ class Site(object):
         self.hotdeal_table = consts.HOTDEAL_TABLE[self.name]
         self.stamp_calendar = consts.STAMP_CALENDAR[self.name]
 
-    @property
-    def btn_login(self) -> str | None:
-        return consts.LOGIN[self.login][self.name]
+        btn_login = consts.LOGIN[self.login][self.name]
 
-    def __getattr__(self, __name: str) -> Any:
+        if btn_login is None:
+            raise ConfigError(f"'{self.name}' 의 로그인 방식 '{self.login}'은 지원하지 않습니다.")
+
+        self.btn_login = btn_login
+
+        if self.credential_storage == "lagacy":
+            print(f"⚠️주의: {self.name}의 'credential_storage'가 'lagacy'로 설정되어 있습니다.")
+
+        check_yaml_types(self)
+
+    def asdict(self) -> dict[str, Any]:
+        result = asdict_public(self)
+        result["id"] = self._id
+        result["password"] = self._password
+
+        return result
+
+    @classmethod
+    def public_fields(cls) -> list[str]:
+        fields = get_public_field_names(cls)
+        fields.extend(["id", "password"])
+        return fields
+
+    @property
+    def id(self) -> str:
+        return self._get_credential("id")
+
+    @property
+    def password(self) -> str:
+        return self._get_credential("password")
+
+    def _get_credential(self, target: str) -> str:
+        if self.login == "default":
+            if self.credential_storage == "lagacy":
+                return getattr(self, f"_{target}")
+            else:
+                return self._get_keyring(target)
+        else:
+            raise ValueError("default가 아닌 로그인 방식은 id, password를 불러오면 안됨")
+
+    def _get_keyring(self, __name: str) -> str:
         if __name in ["id", "password"]:
+            name_str_attr = f"_{__name}"
             if self.login != "default":
                 raise ValueError("default가 아닌 로그인 방식은 id, password를 불러오면 안됨")
 
-            if self._options.common.credential_storage == "lagacy":
-                return self._options._getoption(self.name, __name)
+            if getattr(self, name_str_attr) != "saved":  # 저장되지 않은 경우
+                credential = set_credential(__name, self.name, self._namespace)
+                setattr(self, name_str_attr, "saved")
+                self._save_yaml_callback()
+
             else:
-                if self._options._getoption(self.name, __name) != "saved":  # 저장되지 않은 경우
-                    credential = set_credential(__name, self.name, self._options.common.namespace)
-                    self.save_credential_status(__name)
+                credential = get_credential(__name, self.name, self._namespace)
 
-                else:
-                    credential = get_credential(__name, self.name, self._options.common.namespace)
-
-                return credential
+            return credential
         else:
-            return self._options._getoption(self.name, __name)
-
-    def save_credential_status(self, type: str) -> None:
-        self._options._settings[self.name][type] = "saved"
-        self._options.save_yaml()
+            raise ValueError("id/password 속성이 아닌데")
 
     def __eq__(self, __value: object) -> bool:
         if not isinstance(__value, Site):

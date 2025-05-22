@@ -81,14 +81,14 @@ class SaleTable(PrettyTable):
         return len(self.rows)
 
 
-class ConsoleWorkingAnimation:
+class WorkingAnimation:
     def __init__(
         self,
         message: str,
         final_message: str,
         error_message: str = "작업 중 오류 발생",
         dynamic_print: bool = True,
-        loop_list: list | None = None,
+        loop_list: list[str] | None = None,
     ) -> None:
         self.message = message
         self.final_message = final_message
@@ -110,7 +110,7 @@ class ConsoleWorkingAnimation:
         self._finished_event = asyncio.Event()
         self._anim_task: asyncio.Task | None = None
 
-    async def show_message(self):
+    async def _show_message_coro(self):
         if not self.dynamic_print:
             print(f"{self.message}{max(self._loop_list)}")
             return
@@ -127,12 +127,15 @@ class ConsoleWorkingAnimation:
         except asyncio.CancelledError:
             pass
 
-    async def __aenter__(self) -> Self:
+    def show_message(self) -> None:
         if not self.dynamic_print:
             print(f"{self.message}{max(self._loop_list)}")
-            return self
+            return
         self._finished_event.clear()
-        self._anim_task = asyncio.create_task(self.show_message())
+        self._anim_task = asyncio.create_task(self._show_message_coro())
+
+    async def __aenter__(self) -> Self:
+        self.show_message()
         return self
 
     async def __aexit__(self, exc_type, exc_value, traceback) -> Literal[False]:

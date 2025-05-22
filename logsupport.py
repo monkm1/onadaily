@@ -87,7 +87,7 @@ class LoggingInfo:
         )
 
 
-async_id = ContextVar("async_id", default=None)
+async_id = ContextVar[str | None]("async_id", default=None)
 
 
 class AsyncLogFilter(logging.Filter):
@@ -128,7 +128,7 @@ class LogCaptureContext:
 
     async def __aenter__(self) -> Self:
         logger.debug(f"로그 캡처 시작 id : {self.capture_id}")
-        async_id.set(self.capture_id)  # type: ignore[arg-type]
+        async_id.set(self.capture_id)
         self.shared_memory_handler = logging.handlers.MemoryHandler(
             capacity=10000, flushLevel=logging.CRITICAL + 1, target=None, flushOnClose=False
         )

@@ -5,13 +5,13 @@ name = "pypi"
 
 [packages]
 pyyaml = "*"
-selenium = "*"
 beautifulsoup4 = "*"
 prettytable = "*"
 pytz = "*"
 keyring = "*"
 pwinput = "*"
 patchright = "*"
+attrs = "*"
 
 [dev-packages]
 mypy = "*"

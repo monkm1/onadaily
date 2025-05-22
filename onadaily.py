@@ -6,14 +6,14 @@ from typing import Awaitable
 from patchright.async_api import BrowserContext, Page, async_playwright
 from prettytable import PrettyTable
 
-from classes import ConsoleWorkingAnimation, StampResult
+from classes import StampResult, WorkingAnimation
 from config import Options, Site
 from consts import ALWAYS_SAVE_LOG
 from errors import AlreadyStamped, HotDealDataNotFoundError, LoginFailedError, StampFailedError
 from hotdealstrategies import get_hotdeal_strategy
 from loginstrategies import get_login_strategy
 from logsupport import LogCaptureContext, LoggingInfo, save_log
-from playwrighthelper import makebrowser, normalize_url
+from playwrighthelper import make_browser, make_page, normalize_url
 from stampstrategies import get_stamp_strategy
 
 logger = logging.getLogger("onadaily")
@@ -24,7 +24,7 @@ class Onadaily(object):  # TODO: 버전 정보 추가
         self.passed: dict[Site, StampResult] = {}
         self.options = Options()
 
-        for site in self.options.sites:
+        for site in self.options.common.order:
             self.passed[site] = StampResult(site)
         self.keywordnoti = PrettyTable()
         self.keywordnoti.field_names = ["사이트", "품명", "정상가", "할인가"]
@@ -66,14 +66,13 @@ class Onadaily(object):  # TODO: 버전 정보 추가
                 logger.info(f"== {site.name} ==")
 
                 if not site.enable:
-                    logger.info("skip")
                     result.resultmessage = "스킵"
                     result.passed = True
                     return result
 
                 logger.info(f"{try_count}번째 시도")
 
-                page = await browser.new_page()
+                page = await make_page(browser)
                 login_strategy = get_login_strategy(page, site)
                 await login_strategy.login(site)
                 logger.info("로그인 성공")
@@ -100,8 +99,6 @@ class Onadaily(object):  # TODO: 버전 정보 추가
             exception = e
             error_traceback = traceback.format_exc()
         finally:
-            if result.iserror:
-                result.passed = False
             result.logginginfo = LoggingInfo(
                 exception, error_traceback, site.name, site.login, self.chromeversion, log_capture
             )
@@ -143,24 +140,29 @@ class Onadaily(object):  # TODO: 버전 정보 추가
             order = self.options.common.order
             jobs: list[Awaitable] = []
 
+            browser_loading_anim = WorkingAnimation(
+                "브라우저 초기화 중",
+                "브라우저 초기화 완료",
+                "브라우저 초기화 중 오류 발생",
+                isconcurrent,
+            )
+
+            browser_loading_anim.show_message()
+
             async with async_playwright() as p:
-                async with ConsoleWorkingAnimation(
-                    "브라우저 초기화 중",
-                    "브라우저 초기화 완료",
-                    "브라우저 초기화 중 오류 발생",
-                    isconcurrent,
-                ):
-                    browser = await makebrowser(p, headless=self.options.common.headless)
-                    browser.set_default_timeout(self.options.common.waittime * 1000)
+                browser = await make_browser(p, headless=self.options.common.headless)
+                browser.set_default_timeout(self.options.common.waittime * 1000)
 
                 # await remove_cookie(browser)
+
+                await browser_loading_anim.stop()
 
                 for site in order:
                     if self.passed[site]:
                         continue
                     jobs.append(self.check(browser, site, retry_count))
 
-                async with ConsoleWorkingAnimation(
+                async with WorkingAnimation(
                     "출석 체크 진행 중", "출석 체크 작업 완료", "출석 체크 중 오류 발생", isconcurrent
                 ):
                     if isconcurrent:
