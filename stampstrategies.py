@@ -65,8 +65,6 @@ class BananaStampStrategy(BaseStampStrategy):
         elif dialog_text == "이미 출석체크를 하셨습니다.":
             raise StampFailedError("바나나 얼럿 처리 실패/달력 파싱 오류")
 
-        await dialog.accept()
-
 
 def get_stamp_strategy(page: Page, site: Site) -> BaseStampStrategy:
     if site.name == "banana":
