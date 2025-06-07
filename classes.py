@@ -120,7 +120,7 @@ class WorkingAnimation:
                 print(f"\r{self.message}{current_pattern}{' ' * self.max_pattern_len}", end="")
                 sys.stdout.flush()
                 try:
-                    await asyncio.wait_for(self._finished_event.wait(), timeout=0.2)
+                    await asyncio.wait_for(self._finished_event.wait(), timeout=0.8)
                 except asyncio.TimeoutError:
                     pass
 
@@ -142,7 +142,7 @@ class WorkingAnimation:
         if not self.dynamic_print:
             print(self.final_message)
             return False
-        await self.stop()
+        await self.stop(exc_value=exc_value)
         return False
 
     async def stop(self, exc_value: Exception | None = None) -> None:

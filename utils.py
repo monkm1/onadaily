@@ -61,13 +61,11 @@ def num_of_month_week() -> tuple[int, int]:
 
     day_of_month = date.day
 
-    if first_day.weekday() == 6:
-        adjusted_dom = day_of_month + 1
-    else:
-        adjusted_dom = day_of_month + first_day.weekday() + 1
+    offset = (first_day.weekday() + 1) % 7
+    adjusted_dom = offset + day_of_month
 
     weeknum = int(ceil(adjusted_dom / 7.0))
-    dayofweeknum = (date.weekday() + 1) % 7 + 1
+    dayofweeknum = date.isoweekday() % 7 + 1
 
     return weeknum, dayofweeknum
 

@@ -1,6 +1,5 @@
 import asyncio
 import logging
-import traceback
 from typing import Awaitable
 
 from patchright.async_api import BrowserContext, Page, async_playwright
@@ -58,11 +57,9 @@ class Onadaily(object):  # TODO: 버전 정보 추가
         result = StampResult(site)
         log_capture: LogCaptureContext | None = None
         page: Page | None = None
-        exception: Exception | None = None
-        error_traceback = "N/A"
         try:
-            async with LogCaptureContext(logger, site.name) as capturer:
-                log_capture = capturer
+            log_capture = LogCaptureContext(logger, site.name)
+            with log_capture:
                 logger.info(f"== {site.name} ==")
 
                 if not site.enable:
@@ -91,17 +88,11 @@ class Onadaily(object):  # TODO: 버전 정보 추가
         except (LoginFailedError, StampFailedError) as e:
             result.resultmessage = str(e)
             result.iserror = True
-            exception = e
-            error_traceback = traceback.format_exc()
         except Exception as e:
             result.resultmessage = f"❌ 알 수 없는 오류\n\t-{e}"
             result.iserror = True
-            exception = e
-            error_traceback = traceback.format_exc()
         finally:
-            result.logginginfo = LoggingInfo(
-                exception, error_traceback, site.name, site.login, self.chromeversion, log_capture
-            )
+            result.logginginfo = LoggingInfo(self.chromeversion, log_capture, **site.asdict())
             if page is not None and not page.is_closed():
                 await page.close()
 
@@ -146,7 +137,6 @@ class Onadaily(object):  # TODO: 버전 정보 추가
                 "브라우저 초기화 중 오류 발생",
                 isconcurrent,
             )
-
             browser_loading_anim.show_message()
 
             async with async_playwright() as p:

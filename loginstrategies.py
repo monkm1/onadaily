@@ -146,20 +146,11 @@ class BananaLoginStrategy(BaseLoginStrategy):
         self.working_page = self.tmp_page
 
 
-class DingdongLoginStrategy(BaseLoginStrategy):
-    @HandlePlayWrightError(LoginFailedError, "로그아웃 중 실패")
-    async def _logout(self, site: Site, logoutbtn: Locator) -> None:
-        await logoutbtn.click()
-        await self.working_page.goto(site.main_url)
-
-
 def get_login_strategy(page: Page, site: Site) -> BaseLoginStrategy:
     match site.name:
         case "showdang":
             return ShowDangLoginStrategy(page)
         case "banana":
             return BananaLoginStrategy(page)
-        case "dingdong":
-            return DingdongLoginStrategy(page)
         case _:
             return DefaultLoginStrategy(page)

@@ -218,7 +218,7 @@ class Site:
         self.btn_login = btn_login
 
         if self.credential_storage == "lagacy":
-            print(f"⚠️주의: {self.name}의 'credential_storage'가 'lagacy'로 설정되어 있습니다.")
+            print(f"⚠️ 주의: {self.name}의 'credential_storage'가 'lagacy'로 설정되어 있습니다.")
 
         check_yaml_types(self)
 

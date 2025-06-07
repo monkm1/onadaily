@@ -1,16 +1,20 @@
 from __future__ import annotations
 
+import contextvars
 import logging
 import logging.handlers
 import os
 import sys
+import traceback
 import uuid
+from collections import defaultdict
 from contextvars import ContextVar
 from datetime import datetime
 from logging import Logger, LogRecord
-from typing import Literal, Self
+from typing import Literal, Self, Type
 
 from consts import DEBUG_MODE
+from errors import AlreadyStamped
 
 logger = logging.getLogger("onadaily.logsupport")
 
@@ -20,32 +24,31 @@ else:
     app_path = os.path.dirname(os.path.abspath(__file__))
 
 LOG_DIR = os.path.join(app_path, "logs")
-if not os.path.exists(LOG_DIR):
-    os.makedirs(LOG_DIR)
+os.makedirs(LOG_DIR, exist_ok=True)
 
 
 class LoggingInfo:
-    def __init__(
-        self,
-        exception: Exception | None = None,
-        error_traceback: str = "N/A",
-        site_name: str = "N/A",
-        site_login: str = "N/A",
-        version: str = "N/A",
-        logcontext: LogCaptureContext | None = None,
-    ) -> None:
+    def __init__(self, version: str = "N/A", logcontext: LogCaptureContext | None = None, **kwargs) -> None:
         self.now = datetime.now()
         self.logcontext = logcontext
-
-        self.iserror = False if exception is None else True
-        self.stacktrace = error_traceback
-        self.message = str(exception) if self.iserror else "No error"
+        if logcontext is not None:
+            self.iserror = False if logcontext.exc_type is None else True
+            self.stacktrace = logcontext.traceback
+            self.message = str(logcontext.exc_value) if self.iserror else "No error"
+            self.sitename = logcontext.site_name
+        else:
+            self.iserror = False
+            self.stacktrace = "No stacktrace"
+            self.message = "No error"
+            self.sitename = "Nothing"
 
         if self.iserror and DEBUG_MODE:
             print(self.stacktrace)
 
-        self.sitename = site_name
-        self.sitelogin = site_login
+        self.siteoptions = defaultdict(lambda: "N/A")
+
+        for k, v in kwargs.items():
+            self.siteoptions[k] = v
 
         self.version = "Chrome Version : " + version
 
@@ -77,7 +80,8 @@ class LoggingInfo:
             f"{self.now}\n\n"
             f"{self.message}\n"
             f"sitename : {self.sitename}\n"
-            f"login : {self.sitelogin}\n\n"
+            f"login : {self.siteoptions["login"]}\n"
+            f"credential_storage: {self.siteoptions["credential_storage"]}\n\n"
             f"====== STACKTRACE ======\n"
             f"{self.stacktrace}\n\n"
             f"====== DEBUG LOG ======\n"
@@ -126,9 +130,15 @@ class LogCaptureContext:
 
         self.capture_id = str(uuid.uuid4())
 
-    async def __aenter__(self) -> Self:
+        self.exc_type: Type[Exception] | None = None
+        self.exc_value: Exception | None = None
+        self.traceback: str | None = None
+
+        self.async_token: contextvars.Token | None = None
+
+    def __enter__(self) -> Self:
         logger.debug(f"로그 캡처 시작 id : {self.capture_id}")
-        async_id.set(self.capture_id)
+        self.async_token = async_id.set(self.capture_id)
         self.shared_memory_handler = logging.handlers.MemoryHandler(
             capacity=10000, flushLevel=logging.CRITICAL + 1, target=None, flushOnClose=False
         )
@@ -140,7 +150,9 @@ class LogCaptureContext:
 
         return self
 
-    async def __aexit__(self, exc_type, exc_value, traceback) -> Literal[False]:
+    def __exit__(self, exc_type, exc_value, exc_tb) -> Literal[False]:
+        if self.async_token:
+            async_id.reset(self.async_token)
         logger.debug("로그 캡처 종료")
         self.logger.removeHandler(self.shared_memory_handler)
 
@@ -156,6 +168,12 @@ class LogCaptureContext:
 
         self.captured_logs_string = "\n".join(logs)
         self.captured_print_logs_string = "\n".join(logs_print)
+
+        if exc_type is not AlreadyStamped:
+            self.exc_type = exc_type
+            self.exc_value = exc_value
+            if exc_tb is not None:
+                self.traceback = "".join(traceback.format_exception(exc_type, exc_value, exc_tb))
 
         return False
 
