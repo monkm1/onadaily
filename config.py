@@ -13,8 +13,7 @@ from attrs import define, field
 import consts
 from credential_manager import get_credential, set_credential
 from errors import ConfigError
-from logsupport import add_stream_handler
-from utils import asdict_public, check_yaml_types, get_public_field_names
+from utils import add_stream_handler, asdict_public, check_yaml_types, get_public_field_names
 
 logger = logging.getLogger("onadaily")
 

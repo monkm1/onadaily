@@ -159,3 +159,12 @@ def check_yaml_types(instance: AttrsInstance):
             if not isinstance_of_simple_type_hint(value, expected_type):
                 name = getattr(instance, "name", "common")
                 raise ConfigError(f"잘못된 옵션 / [{name}] 옵션: {attr.name}, 값: {value}")
+
+
+def add_stream_handler(logger: logging.Logger, level: int = logging.DEBUG, include_module_name: bool = False) -> None:
+    handler = logging.StreamHandler()
+    handler.setLevel(level)
+    module_name = "%(module)s - " if include_module_name else ""
+    formatter = logging.Formatter(f"{module_name}%(message)s")
+    handler.setFormatter(formatter)
+    logger.addHandler(handler)

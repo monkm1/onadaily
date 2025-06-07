@@ -120,7 +120,7 @@ class WorkingAnimation:
                 print(f"\r{self.message}{current_pattern}{' ' * self.max_pattern_len}", end="")
                 sys.stdout.flush()
                 try:
-                    await asyncio.wait_for(self._finished_event.wait(), timeout=0.8)
+                    await asyncio.wait_for(self._finished_event.wait(), timeout=1.0)
                 except asyncio.TimeoutError:
                     pass
 

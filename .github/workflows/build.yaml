@@ -49,18 +49,21 @@ jobs:
            Write-Error "부트로더 없음 : $pyinstaller_bootloader_dir"
            exit 1
            }
+      - name: Create version.txt from tag name
+        run: echo "${{ github.ref_name }}" > version.txt
+          
       - name: Generate dependency licenses
         run: pipenv run pip-licenses > depend-licenses.txt
       - name: Build onefile
         run: |
-          pipenv run pyinstaller --onefile main.py --name onadaily --add-data onadailyorigin.yaml:. -y --collect-data patchright
+          pipenv run pyinstaller --onefile main.py --name onadaily --add-data onadailyorigin.yaml:. --add-data version.txt:. -y --collect-data patchright
           cp depend-licenses.txt dist/depend-licenses.txt
           cp LICENSE dist/LICENSE.txt
           Compress-Archive .\dist\* onadaily-windows-onefile.zip
           ls
       - name: Build
         run: |
-          pipenv run pyinstaller main.py --name onadaily --add-data onadailyorigin.yaml:. -y --collect-data patchright
+          pipenv run pyinstaller main.py --name onadaily --add-data onadailyorigin.yaml:. --add-data version.txt:. -y --collect-data patchright
           cp depend-licenses.txt dist/onadaily/depend-licenses.txt
           cp LICENSE dist/onadaily/LICENSE.txt
           Compress-Archive .\dist\onadaily\* onadaily-windows.zip

@@ -137,3 +137,4 @@ logs/
 userdata/
 
 build.ps1
+version.txt

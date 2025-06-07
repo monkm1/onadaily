@@ -8,8 +8,9 @@ from yaml import YAMLError
 from config import Options
 from consts import DEBUG_MODE
 from errors import ConfigError
-from logsupport import LogCaptureContext, LoggingInfo, add_stream_handler, save_log
+from logsupport import LogCaptureContext, LoggingInfo, save_log
 from onadaily import Onadaily
+from utils import add_stream_handler
 
 if __name__ == "__main__":
     entertoquit = True

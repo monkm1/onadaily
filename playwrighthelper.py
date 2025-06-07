@@ -22,6 +22,7 @@ async def make_browser(playwright: Playwright, headless: bool = False) -> Browse
         channel="chrome",
         no_viewport=True,
         user_agent=user_agent,
+        args=["--window-size=1280,720"],
     )
     return browser
 

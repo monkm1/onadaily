@@ -30,8 +30,6 @@ class Onadaily(object):  # TODO: 버전 정보 추가
 
         self.latest_logginginfo: dict[Site, LoggingInfo] = {}
 
-        self.chromeversion = "N/A"
-
     async def showhotdeal(self, page: Page, site: Site) -> None:
         if self.options.common.showhotdeal and site.hotdeal_table is not None:  # 핫딜 테이블 불러오기
             try:
@@ -92,7 +90,7 @@ class Onadaily(object):  # TODO: 버전 정보 추가
             result.resultmessage = f"❌ 알 수 없는 오류\n\t-{e}"
             result.iserror = True
         finally:
-            result.logginginfo = LoggingInfo(self.chromeversion, log_capture, **site.asdict())
+            result.logginginfo = LoggingInfo(log_capture, **site.asdict())
             if page is not None and not page.is_closed():
                 await page.close()
 

@@ -13,6 +13,7 @@ from datetime import datetime
 from logging import Logger, LogRecord
 from typing import Literal, Self, Type
 
+import consts
 from consts import DEBUG_MODE
 from errors import AlreadyStamped
 
@@ -28,7 +29,7 @@ os.makedirs(LOG_DIR, exist_ok=True)
 
 
 class LoggingInfo:
-    def __init__(self, version: str = "N/A", logcontext: LogCaptureContext | None = None, **kwargs) -> None:
+    def __init__(self, logcontext: LogCaptureContext | None = None, **kwargs) -> None:
         self.now = datetime.now()
         self.logcontext = logcontext
         if logcontext is not None:
@@ -50,7 +51,7 @@ class LoggingInfo:
         for k, v in kwargs.items():
             self.siteoptions[k] = v
 
-        self.version = "Chrome Version : " + version
+        self.version = "Program Version : " + consts.VERSION
 
         self.saved = False
 
@@ -199,12 +200,3 @@ def save_log(logginginfo: LoggingInfo) -> str:
     logginginfo.saved = True
     print(f"로그 저장됨: {filename}")
     return filename
-
-
-def add_stream_handler(logger: logging.Logger, level: int = logging.DEBUG, include_module_name: bool = False) -> None:
-    handler = logging.StreamHandler()
-    handler.setLevel(level)
-    module_name = "%(module)s - " if include_module_name else ""
-    formatter = logging.Formatter(f"{module_name}%(message)s")
-    handler.setFormatter(formatter)
-    logger.addHandler(handler)
