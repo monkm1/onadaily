@@ -35,14 +35,14 @@ common:
   autoretry: true # true 이면 실패 시 자동으로 재시도합니다.
   retrytime: 3 # autoretry가 true 일 때 재시도하는 최대 횟수입니다.
   keywordnoti: [] # 특정 단어가 할인에 포함되어 있을때 알립니다. showhotdeal이 true 일때만 동작합니다. ex) keywordnoti: ["로션", "메이드"]
-  credential_storage: keyring
-  # 아이디/비밀번호 저장소입니다. keyring, lagacy 중 하나를 선택합니다. lagacy는 이 파일 각 사이트 id/pasword에 직접 입력합니다.
-  # 주의: lagacy는 보안이 취약합니다. keyring을 추천합니다.
   namespace: Onadaily # 고급 사용자용: keyring을 사용할 때 저장소 이름입니다. 이 이름으로 저장소에 접근합니다.
   concurrent: true # true이면, 출석체크를 동시에 진행합니다.
 onami:
   enable: true
   login: default
+  credential_storage: keyring
+  # 아이디/비밀번호 저장소입니다. keyring, lagacy 중 하나를 선택합니다. lagacy는 이 파일 각 사이트 id/pasword에 직접 입력합니다.
+  # 주의: lagacy는 보안이 취약합니다. keyring을 추천합니다.
   id: null
   password: null
 
@@ -74,14 +74,12 @@ common:
   autoretry: true # true 이면 실패 시 자동으로 재시도합니다.
   retrytime: 3 # autoretry가 true 일 때 재시도하는 최대 횟수입니다.
   keywordnoti: [] # 특정 단어가 할인에 포함되어 있을때 알립니다. showhotdeal이 true 일때만 동작합니다. ex) keywordnoti: ["로션", "메이드"]
-  credential_storage: keyring
-  # 아이디/비밀번호 저장소입니다. keyring, lagacy 중 하나를 선택합니다. lagacy는 이 파일 각 사이트 id/pasword에 직접 입력합니다.
-  # 주의: lagacy는 보안이 취약합니다. keyring을 추천합니다.
   namespace: Onadaily # 고급 사용자용: keyring을 사용할 때 저장소 이름입니다. 이 이름으로 저장소에 접근합니다.
   concurrent: true # true이면, 출석체크를 동시에 진행합니다.
 onami:
   enable: true
   login: kakao # 카카오 로그인 사용
+  credential_storage: keyring # 소셜 로그인에서는 이 옵션을 사용하지 않습니다.
   id: null
   password: null
 
@@ -105,38 +103,40 @@ common:
   autoretry: true # true 이면 실패 시 자동으로 재시도합니다.
   retrytime: 3 # autoretry가 true 일 때 재시도하는 최대 횟수입니다.
   keywordnoti: [] # 특정 단어가 할인에 포함되어 있을때 알립니다. showhotdeal이 true 일때만 동작합니다. ex) keywordnoti: ["로션", "메이드"]
-  credential_storage: keyring
-  # 아이디/비밀번호 저장소입니다. keyring, lagacy 중 하나를 선택합니다. lagacy는 이 파일 각 사이트 id/pasword에 직접 입력합니다.
-  # 주의: lagacy는 보안이 취약합니다. keyring을 추천합니다.
   namespace: Onadaily # 고급 사용자용: keyring을 사용할 때 저장소 이름입니다. 이 이름으로 저장소에 접근합니다.
   concurrent: true # true이면, 출석체크를 동시에 진행합니다.
 onami:
   enable: true
   login: default
+  credential_storage: keyring
   id: null
   password: null
 
 showdang:
   enable: true
   login: google
+  credential_storage: keyring
   id: null
   password: null
 
 banana:
   enable: true
   login: facebook
+  credential_storage: keyring
   id: null
   password: null
 
 dingdong:
   enable: false
   login: kakao
+  credential_storage: keyring
   id: null
   password: null
 
 domae:
   enable: true
   login: default
+  credential_storage: keyring
   id: null
   password: null
 ```
