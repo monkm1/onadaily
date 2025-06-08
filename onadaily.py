@@ -1,8 +1,9 @@
 import asyncio
+import functools
 import logging
 from typing import Awaitable
 
-from patchright.async_api import BrowserContext, Page, async_playwright
+from patchright.async_api import BrowserContext, Dialog, Page, async_playwright
 from prettytable import PrettyTable
 
 from classes import StampResult, WorkingAnimation
@@ -11,11 +12,26 @@ from consts import ALWAYS_SAVE_LOG
 from errors import AlreadyStamped, HotDealDataNotFoundError, LoginFailedError, StampFailedError
 from hotdealstrategies import get_hotdeal_strategy
 from loginstrategies import get_login_strategy
-from logsupport import LogCaptureContext, LoggingInfo, save_log
-from playwrighthelper import make_browser, make_page, normalize_url
+from logsupport import LogCaptureContext, LoggingInfo, async_id, save_log
+from playwrighthelper import make_browser, normalize_url
 from stampstrategies import get_stamp_strategy
 
 logger = logging.getLogger("onadaily")
+
+
+async def handle_dialog(dialog: Dialog, capture_id: str | None) -> None:
+    if capture_id is None:
+        logger.warning("컨텍스트 id 설정되지 않음")
+        await dialog.accept()
+        return
+
+    token = async_id.set(capture_id)
+
+    try:
+        logger.debug(f"다이얼로그 발생 : {dialog.message}")
+        await dialog.accept()
+    finally:
+        async_id.reset(token)
 
 
 class Onadaily(object):  # TODO: 버전 정보 추가
@@ -67,7 +83,10 @@ class Onadaily(object):  # TODO: 버전 정보 추가
 
                 logger.info(f"{try_count}번째 시도")
 
-                page = await make_page(browser)
+                page = await browser.new_page()
+                dialog_handler = functools.partial(handle_dialog, capture_id=log_capture.capture_id)
+                page.on("dialog", dialog_handler)
+
                 login_strategy = get_login_strategy(page, site)
                 await login_strategy.login(site)
                 logger.info("로그인 성공")

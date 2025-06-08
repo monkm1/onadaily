@@ -3,7 +3,7 @@ import os
 from typing import Pattern
 from urllib.parse import urlparse, urlsplit
 
-from patchright.async_api import BrowserContext, Dialog, Locator, Page, Playwright
+from patchright.async_api import BrowserContext, Locator, Page, Playwright
 
 import consts
 from config import Site
@@ -25,16 +25,6 @@ async def make_browser(playwright: Playwright, headless: bool = False) -> Browse
         args=["--window-size=1280,720"],
     )
     return browser
-
-
-async def make_page(browser: BrowserContext) -> Page:
-    async def handle_dialog(dialog: Dialog) -> None:
-        logger.debug(f"다이얼로그 발생 : {dialog.message}")
-        await dialog.accept()
-
-    page = await browser.new_page()
-    page.on("dialog", handle_dialog)
-    return page
 
 
 def locator(

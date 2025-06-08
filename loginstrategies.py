@@ -80,8 +80,8 @@ class BaseLoginStrategy(abc.ABC):
     async def _click_login_button(self, site: Site) -> None:
         if site.btn_login is None:
             raise LoginFailedError(f"로그인 버튼 클릭 실패/{site.name}에서 지원하지 않는 로그인 방식입니다.")
-        async with self.working_page.expect_navigation(url=site.main_url):
-            await playwrighthelper.locator(self.working_page, site.btn_login).click()
+        await playwrighthelper.locator(self.working_page, site.btn_login).click()
+        await self.working_page.wait_for_url(site.main_url)
 
     @HandlePlayWrightError(LoginFailedError, "로그인 버튼 클릭 후 처리 실패")
     async def _after_click_login_btn(self, site: Site) -> None:
