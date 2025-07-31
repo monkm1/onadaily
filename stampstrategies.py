@@ -1,5 +1,7 @@
 import abc
+import asyncio
 import logging
+import random
 
 from patchright.async_api import Dialog, Page
 
@@ -66,8 +68,18 @@ class BananaStampStrategy(BaseStampStrategy):
             raise StampFailedError("바나나 얼럿 처리 실패/달력 파싱 오류")
 
 
+class OnamiStampStrategy(BaseStampStrategy):
+    @HandlePlayWrightError(StampFailedError, "출석 체크 버튼 클릭 실패")
+    async def _click_stamp_button(self, site: Site):
+        btn_stamp = playwrighthelper.locator(self.working_page, site.btn_stamp)
+        await asyncio.sleep(random.uniform(1.1, 1.5))
+        await btn_stamp.click()
+
+
 def get_stamp_strategy(page: Page, site: Site) -> BaseStampStrategy:
     if site.name == "banana":
         return BananaStampStrategy(page)
+    elif site.name == "onami":
+        return OnamiStampStrategy(page)
     else:
         return DefaultStampStrategy(page)

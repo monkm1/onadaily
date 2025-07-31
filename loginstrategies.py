@@ -141,6 +141,12 @@ class BananaLoginStrategy(BaseLoginStrategy):
         self.working_page = await popup_info.value
         logger.debug(f"로그인 창 : {self.working_page.url}")
 
+    @HandlePlayWrightError(LoginFailedError, "로그인 버튼 클릭 실패")
+    async def _click_login_button(self, site: Site) -> None:
+        if site.btn_login is None:
+            raise LoginFailedError(f"로그인 버튼 클릭 실패/{site.name}에서 지원하지 않는 로그인 방식입니다.")
+        await playwrighthelper.locator(self.working_page, site.btn_login).click()
+
     @HandlePlayWrightError(LoginFailedError, "로그인 버튼 클릭 후 처리 실패")
     async def _after_click_login_btn(self, site):
         self.working_page = self.tmp_page

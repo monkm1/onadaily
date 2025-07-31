@@ -135,7 +135,7 @@ LOGIN: dict[str, dict[str, str] | dict[str, str | None]] = {
     "twitter": BTN_TWITTER_LOGIN,
 }
 BTN_STAMP = {
-    "onami": "//a[contains(@onclick, 'attend_send')]/img",
+    "onami": '//a[@id="real-attend-btn"]',
     "showdang": "//button[contains(@class, 'btn_attend_check')]",
     "banana": "//div[contains(@class, 'btn_check')]/a",
     "dingdong": "//a[contains(@onclick, 'attend_send')]",
